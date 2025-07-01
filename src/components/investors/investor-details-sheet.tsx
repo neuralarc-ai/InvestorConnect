@@ -9,12 +9,12 @@ import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { Wand2, Mail, Copy, Loader2, Send, Briefcase, Globe, Phone, User, Building, MapPin, TrendingUp, Info } from "lucide-react"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { Wand2, Mail, Copy, Loader2, Send, Briefcase, Globe, Phone, User, MapPin, TrendingUp, Info } from "lucide-react"
 
 interface InvestorDetailsSheetProps {
-  investor: Investor | null
+  investors: Investor[] | null
   isOpen: boolean
   onClose: () => void
 }
@@ -48,22 +48,34 @@ function DetailLinkItem({ icon: Icon, label, value }: { icon: React.ElementType,
     )
   }
 
-export function InvestorDetailsSheet({ investor, isOpen, onClose }: InvestorDetailsSheetProps) {
-  const [generatedEmail, setGeneratedEmail] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
+type EmailState = {
+  isLoading: boolean;
+  content: string;
+}
+
+export function InvestorDetailsSheet({ investors: investorGroup, isOpen, onClose }: InvestorDetailsSheetProps) {
+  const [emailStates, setEmailStates] = useState<Map<string, EmailState>>(new Map())
   const { toast } = useToast()
 
   useEffect(() => {
     if (isOpen) {
-      setGeneratedEmail("")
-      setIsLoading(false)
+      setEmailStates(new Map())
     }
   }, [isOpen])
 
-  const handleGenerateEmail = async () => {
-    if (!investor) return
-    setIsLoading(true)
-    setGeneratedEmail("")
+  const updateEmailState = (contactId: string, newState: Partial<EmailState>) => {
+    setEmailStates(prev => {
+      const newMap = new Map(prev)
+      const currentState = newMap.get(contactId) || { isLoading: false, content: '' }
+      newMap.set(contactId, { ...currentState, ...newState })
+      return newMap
+    })
+  }
+
+  const handleGenerateEmail = async (investor: Investor) => {
+    const contactId = investor.Contact_Person;
+    updateEmailState(contactId, { isLoading: true, content: '' })
+
     try {
       const input: GeneratePersonalizedEmailInput = {
         Contact_Person: investor.Contact_Person,
@@ -74,90 +86,108 @@ export function InvestorDetailsSheet({ investor, isOpen, onClose }: InvestorDeta
         pitchSummary: "We are building a revolutionary platform to change the world."
       }
       const result = await generatePersonalizedEmail(input)
-      setGeneratedEmail(result.emailContent)
-      toast({ title: "Email Generated", description: "The personalized email is ready for review." })
+      updateEmailState(contactId, { content: result.emailContent })
+      toast({ title: "Email Generated", description: `Personalized email for ${contactId} is ready.` })
     } catch (error) {
       console.error("Failed to generate email:", error)
       toast({ variant: "destructive", title: "Generation Failed", description: "Could not generate the email." })
     } finally {
-      setIsLoading(false)
+      updateEmailState(contactId, { isLoading: false })
     }
   }
 
-  const handleSendEmail = () => {
-    toast({ title: "Email Sent (Mock)", description: `Email to ${investor?.Email} has been logged.` })
+  const handleSendEmail = (email?: string) => {
+    toast({ title: "Email Sent (Mock)", description: `Email to ${email} has been logged.` })
   }
 
-  const handleCopyToClipboard = () => {
-    navigator.clipboard.writeText(generatedEmail)
+  const handleCopyToClipboard = (content: string) => {
+    navigator.clipboard.writeText(content)
     toast({ title: "Copied to Clipboard" })
   }
 
+  const handleTextChange = (contactId: string, value: string) => {
+    updateEmailState(contactId, { content: value });
+  }
+
+  const primaryInvestor = investorGroup?.[0];
+
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent className="w-full sm:max-w-2xl p-0">
+      <SheetContent className="w-full sm:max-w-3xl p-0">
         <ScrollArea className="h-full">
-          {investor && (
+          {primaryInvestor && investorGroup && (
             <>
               <SheetHeader className="p-6">
-                <SheetTitle className="font-headline text-2xl">{investor.Contact_Person}</SheetTitle>
-                <SheetDescription>{investor.Designation} at {investor.Investor_Name}</SheetDescription>
+                <SheetTitle className="font-headline text-2xl">{primaryInvestor.Investor_Name}</SheetTitle>
+                <SheetDescription>{investorGroup.length} contact{investorGroup.length > 1 ? 's' : ''} found at this firm.</SheetDescription>
               </SheetHeader>
               <Separator />
-              <div className="p-6 space-y-6">
-                
-                <Card>
-                    <CardHeader><CardTitle className="text-lg font-headline">Contact Information</CardTitle></CardHeader>
-                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <DetailItem icon={Mail} label="Email" value={investor.Email} />
-                        <DetailItem icon={Phone} label="Phone" value={investor.Phone} />
-                        <DetailLinkItem icon={User} label="LinkedIn" value={investor.LinkedIn} />
-                        <DetailLinkItem icon={Building} label="Company LinkedIn" value={investor.Company_LinkedIn} />
-                        <DetailLinkItem icon={Globe} label="Website" value={investor.Website} />
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader><CardTitle className="text-lg font-headline">Investor Details</CardTitle></CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                           <DetailItem icon={MapPin} label="Location" value={investor.Location} />
-                           <DetailItem icon={Briefcase} label="Investor Type" value={investor.Investor_Type} />
-                           <DetailItem icon={TrendingUp} label="Investment Score" value={investor.Investment_Score} />
-                           <DetailItem icon={Info} label="Founded Year" value={investor.Founded_Year} />
-                        </div>
-                        <DetailItem icon={Info} label="Practice Areas" value={investor.Practice_Areas} />
-                        <DetailItem icon={Info} label="Overview" value={investor.Overview} />
-                        <DetailItem icon={Info} label="Description" value={investor.Description} />
-                    </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg font-headline">Generate Email</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <Button onClick={handleGenerateEmail} disabled={isLoading}>
-                      {isLoading ? <Loader2 className="animate-spin" /> : <Wand2 />}
-                      Generate Personalized Email
-                    </Button>
+              <div className="p-6">
+                <Accordion type="single" collapsible className="w-full" defaultValue={investorGroup[0].Contact_Person}>
+                  {investorGroup.map((investor) => {
+                    const contactId = investor.Contact_Person;
+                    const emailState = emailStates.get(contactId) || { isLoading: false, content: '' };
                     
-                    {generatedEmail && (
-                      <div className="space-y-4 pt-4">
-                        <Textarea
-                          value={generatedEmail}
-                          onChange={(e) => setGeneratedEmail(e.target.value)}
-                          rows={15}
-                          className="text-sm"
-                        />
-                        <div className="flex gap-2">
-                          <Button onClick={handleSendEmail}><Send/>Send Email (Mock)</Button>
-                          <Button variant="outline" onClick={handleCopyToClipboard}><Copy/>Copy</Button>
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                    return (
+                      <AccordionItem value={contactId} key={contactId}>
+                        <AccordionTrigger className="font-semibold text-left">{investor.Contact_Person} - <span className="text-muted-foreground font-normal ml-2">{investor.Designation}</span></AccordionTrigger>
+                        <AccordionContent>
+                          <div className="space-y-6 pt-2">
+                            <Card>
+                                <CardHeader><CardTitle className="text-lg font-headline">Contact Information</CardTitle></CardHeader>
+                                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <DetailItem icon={Mail} label="Email" value={investor.Email} />
+                                    <DetailItem icon={Phone} label="Phone" value={investor.Phone} />
+                                    <DetailLinkItem icon={User} label="LinkedIn" value={investor.LinkedIn} />
+                                    <DetailLinkItem icon={Globe} label="Website" value={investor.Website} />
+                                </CardContent>
+                            </Card>
+
+                            <Card>
+                                <CardHeader><CardTitle className="text-lg font-headline">Firm Details</CardTitle></CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      <DetailItem icon={MapPin} label="Location" value={investor.Location} />
+                                      <DetailItem icon={Briefcase} label="Investor Type" value={investor.Investor_Type} />
+                                      <DetailItem icon={TrendingUp} label="Investment Score" value={investor.Investment_Score} />
+                                    </div>
+                                    <DetailItem icon={Info} label="Practice Areas" value={investor.Practice_Areas} />
+                                    <DetailItem icon={Info} label="Overview" value={investor.Overview} />
+                                </CardContent>
+                            </Card>
+            
+                            <Card>
+                              <CardHeader>
+                                <CardTitle className="text-lg font-headline">Generate Email</CardTitle>
+                              </CardHeader>
+                              <CardContent className="space-y-4">
+                                <Button onClick={() => handleGenerateEmail(investor)} disabled={emailState.isLoading}>
+                                  {emailState.isLoading ? <Loader2 className="animate-spin" /> : <Wand2 />}
+                                  Generate for {investor.Contact_Person}
+                                </Button>
+                                
+                                {emailState.content && (
+                                  <div className="space-y-4 pt-4">
+                                    <Textarea
+                                      value={emailState.content}
+                                      onChange={(e) => handleTextChange(contactId, e.target.value)}
+                                      rows={15}
+                                      className="text-sm"
+                                    />
+                                    <div className="flex gap-2">
+                                      <Button onClick={() => handleSendEmail(investor.Email)}><Send/>Send Email (Mock)</Button>
+                                      <Button variant="outline" onClick={() => handleCopyToClipboard(emailState.content)}><Copy/>Copy</Button>
+                                    </div>
+                                  </div>
+                                )}
+                              </CardContent>
+                            </Card>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    )
+                  })}
+                </Accordion>
               </div>
             </>
           )}
