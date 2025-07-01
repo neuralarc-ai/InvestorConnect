@@ -40,7 +40,7 @@ function DetailLinkItem({ icon: Icon, label, value }: { icon: React.ElementType,
         <Icon className="h-4 w-4 mr-3 mt-1 text-muted-foreground flex-shrink-0" />
         <div>
           <p className="font-semibold">{label}</p>
-          <a href={href} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-500 hover:underline break-all">
+          <a href={href} target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-2 break-all">
             {value}
           </a>
         </div>

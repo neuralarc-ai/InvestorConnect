@@ -30,14 +30,14 @@ export function InvestorDashboard() {
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
-      <main className="flex-grow container mx-auto py-8">
+      <main className="flex-grow container mx-auto py-8 px-4">
         {investors.length > 0 ? (
           <div className="w-full">
             <div className="mb-8 max-w-4xl mx-auto">
               <p className="text-lg font-semibold mb-2">Import More Investors</p>
               <CsvUploader />
             </div>
-            <div className="flex flex-wrap justify-start gap-6">
+            <div className="flex flex-wrap justify-center gap-6">
               {groupedInvestors.map((group) => (
                 <InvestorCard
                   key={group[0].Investor_Name}
