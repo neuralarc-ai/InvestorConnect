@@ -37,7 +37,7 @@ export function InvestorDashboard() {
               <p className="text-lg font-semibold mb-2">Import More Investors</p>
               <CsvUploader />
             </div>
-            <div className="flex flex-wrap justify-center gap-6">
+            <div className="flex flex-wrap justify-start gap-6">
               {groupedInvestors.map((group) => (
                 <InvestorCard
                   key={group[0].Investor_Name}

@@ -70,3 +70,39 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+@property --angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.card-hover-border::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  z-index: -1;
+  background: conic-gradient(
+    from var(--angle),
+    hsl(var(--secondary-foreground)),
+    hsl(var(--primary)),
+    hsl(var(--accent-foreground)),
+    hsl(var(--primary)),
+    hsl(var(--secondary-foreground))
+  );
+  border-radius: calc(var(--radius) + 4px);
+  animation: rotate 4s linear infinite;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+  --angle: 0deg;
+}
+
+.card-hover-border:hover::before {
+  opacity: 1;
+}

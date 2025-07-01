@@ -26,7 +26,7 @@ function DetailItem({ icon: Icon, label, value }: { icon: React.ElementType, lab
       <Icon className="h-4 w-4 mr-3 mt-1 text-muted-foreground flex-shrink-0" />
       <div>
         <p className="font-semibold">{label}</p>
-        <p className="text-sm text-muted-foreground">{value}</p>
+        <p className="text-sm text-muted-foreground break-words">{value}</p>
       </div>
     </div>
   )
@@ -61,7 +61,7 @@ export function InvestorDetailsSheet({ investors: investorGroup, isOpen, onClose
     if (isOpen) {
       setEmailStates(new Map())
     }
-  }, [isOpen])
+  }, [isOpen, investorGroup])
 
   const updateEmailState = (contactId: string, newState: Partial<EmailState>) => {
     setEmailStates(prev => {
@@ -113,7 +113,7 @@ export function InvestorDetailsSheet({ investors: investorGroup, isOpen, onClose
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent className="w-full sm:max-w-3xl p-0">
+      <SheetContent className="w-full sm:max-w-4xl p-0">
         <ScrollArea className="h-full">
           {primaryInvestor && investorGroup && (
             <>
@@ -130,12 +130,12 @@ export function InvestorDetailsSheet({ investors: investorGroup, isOpen, onClose
                     
                     return (
                       <AccordionItem value={contactId} key={contactId}>
-                        <AccordionTrigger className="font-semibold text-left">{investor.Contact_Person} - <span className="text-muted-foreground font-normal ml-2">{investor.Designation}</span></AccordionTrigger>
+                        <AccordionTrigger className="font-semibold text-left text-lg">{investor.Contact_Person} - <span className="text-muted-foreground font-normal ml-2">{investor.Designation}</span></AccordionTrigger>
                         <AccordionContent>
-                          <div className="space-y-6 pt-2">
+                          <div className="space-y-6 pt-4">
                             <Card>
                                 <CardHeader><CardTitle className="text-lg font-headline">Contact Information</CardTitle></CardHeader>
-                                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <DetailItem icon={Mail} label="Email" value={investor.Email} />
                                     <DetailItem icon={Phone} label="Phone" value={investor.Phone} />
                                     <DetailLinkItem icon={User} label="LinkedIn" value={investor.LinkedIn} />
@@ -145,13 +145,14 @@ export function InvestorDetailsSheet({ investors: investorGroup, isOpen, onClose
 
                             <Card>
                                 <CardHeader><CardTitle className="text-lg font-headline">Firm Details</CardTitle></CardHeader>
-                                <CardContent className="space-y-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <CardContent className="space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                       <DetailItem icon={MapPin} label="Location" value={investor.Location} />
                                       <DetailItem icon={Briefcase} label="Investor Type" value={investor.Investor_Type} />
                                       <DetailItem icon={TrendingUp} label="Investment Score" value={investor.Investment_Score} />
+                                      <DetailItem icon={Info} label="Practice Areas" value={investor.Practice_Areas} />
                                     </div>
-                                    <DetailItem icon={Info} label="Practice Areas" value={investor.Practice_Areas} />
+                                    <Separator />
                                     <DetailItem icon={Info} label="Overview" value={investor.Overview} />
                                 </CardContent>
                             </Card>

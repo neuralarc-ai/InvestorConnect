@@ -31,68 +31,70 @@ export function InvestorCard({ investors, onSelect }: InvestorCardProps) {
   const investmentScoreValue = parseScore(primaryInvestor.Investment_Score)
 
   return (
-    <Card
-      onClick={onSelect}
-      className="cursor-pointer transition-all hover:shadow-lg hover:-translate-y-1 flex flex-col w-80"
-    >
-      <CardHeader>
-        <CardTitle className="font-headline tracking-tight flex items-start justify-between">
-          <span className="line-clamp-2">{primaryInvestor.Investor_Name}</span>
-          {primaryInvestor.Company_LinkedIn && (
-            <Button
-              variant="ghost"
-              size="icon"
-              asChild
-              onClick={(e) => e.stopPropagation()}
-              className="flex-shrink-0"
-            >
-              <a href={primaryInvestor.Company_LinkedIn} target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="h-4 w-4" />
-              </a>
-            </Button>
-          )}
-        </CardTitle>
-        <div className="text-sm text-muted-foreground pt-1 space-y-1">
-          <div className="flex items-center">
-            <User className="mr-2 h-4 w-4" />
-            <span>{primaryInvestor.Contact_Person}</span>
+    <div className="relative card-hover-border">
+       <Card
+        onClick={onSelect}
+        className="cursor-pointer transition-all w-80 flex flex-col bg-card"
+      >
+        <CardHeader>
+          <CardTitle className="font-headline tracking-tight flex items-start justify-between">
+            <span className="line-clamp-2">{primaryInvestor.Investor_Name}</span>
+            {primaryInvestor.Company_LinkedIn && (
+              <Button
+                variant="ghost"
+                size="icon"
+                asChild
+                onClick={(e) => e.stopPropagation()}
+                className="flex-shrink-0"
+              >
+                <a href={primaryInvestor.Company_LinkedIn} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="h-4 w-4" />
+                </a>
+              </Button>
+            )}
+          </CardTitle>
+          <div className="text-sm text-muted-foreground pt-1 space-y-1">
+            <div className="flex items-center">
+              <User className="mr-2 h-4 w-4" />
+              <span>{primaryInvestor.Contact_Person}</span>
+            </div>
+            {primaryInvestor.Designation && (
+              <div className="flex items-center">
+                <Briefcase className="mr-2 h-4 w-4" />
+                <span>{primaryInvestor.Designation}</span>
+              </div>
+            )}
           </div>
-          {primaryInvestor.Designation && (
-             <div className="flex items-center">
-              <Briefcase className="mr-2 h-4 w-4" />
-              <span>{primaryInvestor.Designation}</span>
+        </CardHeader>
+        <CardContent className="flex-grow space-y-4">
+          <p className="text-sm text-muted-foreground line-clamp-2 h-[40px]">
+            {primaryInvestor.Overview}
+          </p>
+          {investmentScoreValue > 0 && (
+            <div>
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-xs font-semibold text-muted-foreground">Investment Score</span>
+                <span className="text-xs font-bold">{primaryInvestor.Investment_Score}</span>
+              </div>
+              <Progress value={investmentScoreValue} className="h-2" />
             </div>
           )}
-        </div>
-      </CardHeader>
-      <CardContent className="flex-grow space-y-4">
-        <p className="text-sm text-muted-foreground line-clamp-2 h-[40px]">
-          {primaryInvestor.Overview}
-        </p>
-        {investmentScoreValue > 0 && (
-          <div>
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-xs font-semibold text-muted-foreground">Investment Score</span>
-              <span className="text-xs font-bold">{primaryInvestor.Investment_Score}</span>
-            </div>
-            <Progress value={investmentScoreValue} className="h-2" />
-          </div>
-        )}
-      </CardContent>
-      <CardFooter className="flex-wrap gap-2">
-        {primaryInvestor.Location &&
-          <Badge variant="secondary" className="flex items-center">
-            <MapPin className="mr-1.5 h-3 w-3" />
-            {primaryInvestor.Location}
-          </Badge>
-        }
-        {otherContactsCount > 0 &&
-          <Badge variant="outline" className="flex items-center">
-            <Users className="mr-1.5 h-3 w-3" />
-            {otherContactsCount} more contact{otherContactsCount > 1 ? 's' : ''}
-          </Badge>
-        }
-      </CardFooter>
-    </Card>
+        </CardContent>
+        <CardFooter className="flex-wrap gap-2">
+          {primaryInvestor.Location &&
+            <Badge variant="secondary" className="flex items-center">
+              <MapPin className="mr-1.5 h-3 w-3" />
+              {primaryInvestor.Location}
+            </Badge>
+          }
+          {otherContactsCount > 0 &&
+            <Badge variant="outline" className="flex items-center">
+              <Users className="mr-1.5 h-3 w-3" />
+              {otherContactsCount} more contact{otherContactsCount > 1 ? 's' : ''}
+            </Badge>
+          }
+        </CardFooter>
+      </Card>
+    </div>
   )
 }
