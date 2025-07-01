@@ -287,7 +287,7 @@ This PIN will expire in 48 hours for security purposes. Please let me know if yo
       toast({ variant: "destructive", title: "Generation Failed", description: "Could not generate the email." })
     } finally {
       updateEmailState(contactId, { isLoading: false })
-      
+
     }
   }
 
