@@ -130,7 +130,12 @@ export function InvestorDetailsSheet({ investors: investorGroup, isOpen, onClose
                     
                     return (
                       <AccordionItem value={contactId} key={contactId}>
-                        <AccordionTrigger className="font-semibold text-left text-lg">{investor.Contact_Person} - <span className="text-muted-foreground font-normal ml-2">{investor.Designation}</span></AccordionTrigger>
+                        <AccordionTrigger>
+                          <div className="flex-1 text-left">
+                            <p className="font-semibold text-lg">{investor.Contact_Person}</p>
+                            <p className="text-sm text-muted-foreground font-normal">{investor.Designation}</p>
+                          </div>
+                        </AccordionTrigger>
                         <AccordionContent>
                           <div className="space-y-6 pt-4">
                             <Card>

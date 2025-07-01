@@ -20,13 +20,22 @@ export function InvestorCard({ investors, onSelect }: InvestorCardProps) {
   const otherContactsCount = investors.length - 1
 
   const parseScore = (scoreString?: string): number => {
-    if (!scoreString || !scoreString.includes('/')) return 0
-    const parts = scoreString.split('/')
-    const score = parseInt(parts[0], 10)
-    const maxScore = parseInt(parts[1], 10)
-    if (isNaN(score) || isNaN(maxScore) || maxScore === 0) return 0
-    return (score / maxScore) * 100
-  }
+    if (!scoreString) return 0
+    
+    // Handle "X/Y" format
+    if (scoreString.includes('/')) {
+        const parts = scoreString.split('/');
+        const score = parseInt(parts[0], 10);
+        const maxScore = parseInt(parts[1], 10);
+        if (isNaN(score) || isNaN(maxScore) || maxScore === 0) return 0;
+        return (score / maxScore) * 100;
+    }
+
+    // Handle plain number format (assume out of 100)
+    const score = parseFloat(scoreString);
+    if (isNaN(score)) return 0;
+    return Math.min(Math.max(score, 0), 100); // Clamp between 0 and 100
+  };
 
   const investmentScoreValue = parseScore(primaryInvestor.Investment_Score)
 
