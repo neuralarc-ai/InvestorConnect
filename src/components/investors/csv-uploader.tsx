@@ -17,25 +17,56 @@ export function CsvUploader() {
   const [previewData, setPreviewData] = useState<Company[]>([])
 
   const parseCsv = (csvText: string): Company[] => {
-    const lines = csvText.trim().split(/\r?\n/)
-    if (lines.length < 2) return []
+    const lines = csvText.trim().split(/\r?\n/);
+    if (lines.length < 2) return [];
 
-    const headers = lines[0].split(',').map(h => h.trim())
+    const parseLine = (line: string): string[] => {
+        const result: string[] = [];
+        let currentField = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') {
+                if (inQuotes && i + 1 < line.length && line[i+1] === '"') {
+                    currentField += '"';
+                    i++; 
+                } else {
+                    inQuotes = !inQuotes;
+                }
+            } else if (char === ',' && !inQuotes) {
+                result.push(currentField);
+                currentField = '';
+            } else {
+                currentField += char;
+            }
+        }
+        result.push(currentField);
+        return result;
+    };
+
+    const headers = parseLine(lines[0]).map(h => h.trim());
+
     const contacts: Contact[] = lines.slice(1).map(line => {
-      const values = line.split(',')
+      if (!line.trim()) return null;
+      
+      const values = parseLine(line);
+      if (values.length !== headers.length) {
+          console.warn('Skipping malformed CSV row:', line, 'Expected', headers.length, 'values, but got', values.length);
+          return null;
+      }
       return headers.reduce((obj, header, index) => {
-        obj[header] = values[index]?.trim() || ''
-        return obj
-      }, {} as any)
-    })
+        obj[header] = values[index]?.trim() || '';
+        return obj;
+      }, {} as any);
+    }).filter((contact): contact is Contact => contact !== null);
 
-    const companyMap = new Map<string, Company>()
+    const companyMap = new Map<string, Company>();
     contacts.forEach(contact => {
-      const companyName = contact.companyName
-      if (!companyName) return
+      const companyName = contact.companyName;
+      if (!companyName) return;
 
       if (companyMap.has(companyName)) {
-        companyMap.get(companyName)?.contacts.push(contact)
+        companyMap.get(companyName)?.contacts.push(contact);
       } else {
         companyMap.set(companyName, {
           companyName: companyName,
@@ -43,29 +74,34 @@ export function CsvUploader() {
           investmentStage: contact.investmentStage || '',
           pastInvestments: contact.pastInvestments || '',
           contacts: [contact]
-        })
+        });
       }
-    })
-    return Array.from(companyMap.values())
+    });
+    return Array.from(companyMap.values());
   }
 
   const handleFile = useCallback((file: File) => {
-    if (file && file.type === "text/csv") {
+    if (file && (file.type === "text/csv" || file.name.endsWith('.csv'))) {
       const reader = new FileReader()
       reader.onload = (e) => {
         const text = e.target?.result as string
-        const parsedCompanies = parseCsv(text)
-        if (parsedCompanies.length > 0) {
-          setPreviewData(parsedCompanies)
-        } else {
-          toast({ variant: "destructive", title: "Parsing Error", description: "Could not parse CSV or file is empty." })
+        try {
+          const parsedCompanies = parseCsv(text)
+          if (parsedCompanies.length > 0) {
+            setPreviewData(parsedCompanies)
+          } else {
+            toast({ variant: "destructive", title: "Parsing Error", description: "Could not parse CSV or file is empty." })
+          }
+        } catch(error) {
+          console.error("CSV Parsing failed", error);
+          toast({ variant: "destructive", title: "Parsing Error", description: "An error occurred while parsing the file." })
         }
       }
       reader.readAsText(file)
     } else {
       toast({ variant: "destructive", title: "Invalid File", description: "Please upload a valid .csv file." })
     }
-  }, [toast])
+  }, [toast, setCompanies])
 
   const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
@@ -106,7 +142,7 @@ export function CsvUploader() {
         <p className="text-sm text-muted-foreground">or click to select a file</p>
         <input
           type="file"
-          accept=".csv"
+          accept=".csv, text/csv"
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
           onChange={(e) => e.target.files && handleFile(e.target.files[0])}
         />
