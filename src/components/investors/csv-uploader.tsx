@@ -17,7 +17,7 @@ export function CsvUploader() {
   const [previewData, setPreviewData] = useState<Company[]>([])
 
   const parseCsv = (csvText: string): Company[] => {
-    const lines = csvText.trim().split(/\r?\n/);
+    const lines = csvText.trim().split(/\r\n?|\n/);
     if (lines.length < 2) return [];
 
     const parseLine = (line: string): string[] => {
@@ -46,37 +46,71 @@ export function CsvUploader() {
 
     const headers = parseLine(lines[0]).map(h => h.trim());
 
-    const contacts: Contact[] = lines.slice(1).map(line => {
-      if (!line.trim()) return null;
-      
-      const values = parseLine(line);
-      if (values.length !== headers.length) {
-          console.warn('Skipping malformed CSV row:', line, 'Expected', headers.length, 'values, but got', values.length);
-          return null;
-      }
-      return headers.reduce((obj, header, index) => {
-        obj[header] = values[index]?.trim() || '';
-        return obj;
-      }, {} as any);
-    }).filter((contact): contact is Contact => contact !== null);
+    // Find column index for required fields, allowing for variations in naming
+    const findIndex = (possibleNames: string[]): number => {
+        for (const name of possibleNames) {
+            const index = headers.findIndex(h => h.toLowerCase().replace(/\s+/g, '') === name);
+            if (index !== -1) return index;
+        }
+        return -1;
+    };
+
+    const colIdx = {
+        companyName: findIndex(['companyname', 'company name', 'company']),
+        investorName: findIndex(['investorname', 'investor name', 'investor']),
+        email: findIndex(['email', 'emailaddress']),
+        companyDescription: findIndex(['companydescription', 'description']),
+        investmentStage: findIndex(['investmentstage', 'stage']),
+        pastInvestments: findIndex(['pastinvestments']),
+    };
+    
+    if (colIdx.companyName === -1 || colIdx.investorName === -1) {
+        toast({
+            variant: "destructive",
+            title: "Invalid CSV Format",
+            description: "CSV must contain 'Company Name' and 'Investor Name' columns.",
+        });
+        return [];
+    }
 
     const companyMap = new Map<string, Company>();
-    contacts.forEach(contact => {
-      const companyName = contact.companyName;
+
+    lines.slice(1).forEach(line => {
+      if (!line.trim()) return;
+
+      const values = parseLine(line);
+      if (values.length !== headers.length) {
+          console.warn('Skipping malformed CSV row:', line);
+          return;
+      }
+      
+      const getVal = (index: number) => (index !== -1 ? values[index]?.trim() : '') || '';
+
+      const companyName = getVal(colIdx.companyName);
       if (!companyName) return;
 
+      const contact: Contact = {
+        investorName: getVal(colIdx.investorName),
+        email: getVal(colIdx.email),
+      };
+      // Add all original headers/values to contact object for full data access
+      headers.forEach((header, index) => {
+        contact[header] = values[index]?.trim() || '';
+      });
+
       if (companyMap.has(companyName)) {
-        companyMap.get(companyName)?.contacts.push(contact);
+        companyMap.get(companyName)!.contacts.push(contact);
       } else {
         companyMap.set(companyName, {
           companyName: companyName,
-          companyDescription: contact.companyDescription || '',
-          investmentStage: contact.investmentStage || '',
-          pastInvestments: contact.pastInvestments || '',
-          contacts: [contact]
+          companyDescription: getVal(colIdx.companyDescription),
+          investmentStage: getVal(colIdx.investmentStage),
+          pastInvestments: getVal(colIdx.pastInvestments),
+          contacts: [contact],
         });
       }
     });
+
     return Array.from(companyMap.values());
   }
 
@@ -89,8 +123,6 @@ export function CsvUploader() {
           const parsedCompanies = parseCsv(text)
           if (parsedCompanies.length > 0) {
             setPreviewData(parsedCompanies)
-          } else {
-            toast({ variant: "destructive", title: "Parsing Error", description: "Could not parse CSV or file is empty." })
           }
         } catch(error) {
           console.error("CSV Parsing failed", error);
