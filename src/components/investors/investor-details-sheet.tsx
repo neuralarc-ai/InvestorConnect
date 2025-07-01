@@ -279,6 +279,8 @@ This PIN will expire in 48 hours for security purposes. Please let me know if yo
 `;
       
       const emailWithPitchAccess = result.emailContent + pitchAccessSection;
+
+      
       
       updateEmailState(contactId, { content: emailWithPitchAccess, pin })
       toast({ title: "Email Generated", description: `Personalized email for ${contactId} is ready with PIN: ${pin}` })
