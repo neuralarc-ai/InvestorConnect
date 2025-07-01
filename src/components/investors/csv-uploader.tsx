@@ -10,6 +10,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { UploadCloud } from "lucide-react"
 
+// Cleaner function to sanitize text for byte-sensitive areas
+function sanitizeText(input: string | undefined) {
+  if (!input) return '';
+  return input.normalize("NFKD").replace(/[\u0300-\u036f]/g, ""); // Remove diacritics
+}
+
 export function CsvUploader() {
   const { setInvestors } = useInvestors()
   const { toast } = useToast()
@@ -80,7 +86,8 @@ export function CsvUploader() {
       };
 
       originalHeaders.forEach((header, index) => {
-        investor[header] = values[index] || '';
+        // Sanitize all values before storing them
+        investor[header] = sanitizeText(values[index] || '');
       });
 
       return investor;
