@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, type ReactNode } from "reac
 import { useLocalStorage } from "@/hooks/use-local-storage"
 import { useToast } from "@/hooks/use-toast"
 
-const CORRECT_PIN = "1234"
+const CORRECT_PIN = "1111"
 
 interface AuthContextType {
   isAuthenticated: boolean
