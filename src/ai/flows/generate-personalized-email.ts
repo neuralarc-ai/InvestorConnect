@@ -12,11 +12,10 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const GeneratePersonalizedEmailInputSchema = z.object({
-  investorName: z.string().describe('The name of the investor.'),
-  companyName: z.string().describe('The name of the investor company.'),
-  companyDescription: z.string().describe('A description of the investor company.'),
-  investmentStage: z.string().describe('The investment stage of the investor company.'),
-  pastInvestments: z.string().describe('The past investments of the investor company.'),
+  Contact_Person: z.string().describe("The name of the contact person at the investment firm."),
+  Designation: z.string().describe("The designation or role of the contact person."),
+  Investor_Name: z.string().describe("The name of the investment firm."),
+  Location: z.string().describe("The location of the investment firm."),
   ourCompanyName: z.string().describe('The name of our company.'),
   pitchSummary: z.string().describe('A brief summary of our company and pitch.'),
 });
@@ -37,20 +36,11 @@ const prompt = ai.definePrompt({
   name: 'generatePersonalizedEmailPrompt',
   input: {schema: GeneratePersonalizedEmailInputSchema},
   output: {schema: GeneratePersonalizedEmailOutputSchema},
-  prompt: `You are an expert email writer specializing in personalized outreach emails to investors.
+  prompt: `Write a personalized, concise outreach email to {{{Contact_Person}}}, who is a {{{Designation}}} at {{{Investor_Name}}}, located in {{{Location}}}.
 
-  Based on the investor's data, write a personalized email to the investor. The email should be engaging, concise, and tailored to the investor's interests and investment strategy.
+Focus on introducing our AI startup, "{{{ourCompanyName}}}", and expressing interest in discussing synergies or funding. Our startup specializes in: {{{pitchSummary}}}.
 
-  Investor Name: {{{investorName}}}
-  Company Name: {{{companyName}}}
-  Company Description: {{{companyDescription}}}
-  Investment Stage: {{{investmentStage}}}
-  Past Investments: {{{pastInvestments}}}
-
-  Our Company Name: {{{ourCompanyName}}}
-  Pitch Summary: {{{pitchSummary}}}
-
-  Write the email content:`,
+Use a respectful and professional tone.`,
 });
 
 const generatePersonalizedEmailFlow = ai.defineFlow(

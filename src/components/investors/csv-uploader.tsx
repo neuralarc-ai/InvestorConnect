@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react"
 import { useInvestors } from "@/providers/investor-provider"
-import type { Company, Contact } from "@/lib/types"
+import type { Investor } from "@/lib/types"
 import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
@@ -11,107 +11,91 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { UploadCloud } from "lucide-react"
 
 export function CsvUploader() {
-  const { setCompanies } = useInvestors()
+  const { setInvestors } = useInvestors()
   const { toast } = useToast()
   const [isDragging, setIsDragging] = useState(false)
-  const [previewData, setPreviewData] = useState<Company[]>([])
+  const [previewData, setPreviewData] = useState<Investor[]>([])
 
-  const parseCsv = (csvText: string): Company[] => {
+  const parseCsv = (csvText: string): Investor[] => {
     const lines = csvText.trim().split(/\r\n?|\n/);
     if (lines.length < 2) return [];
 
     const parseLine = (line: string): string[] => {
-        const result: string[] = [];
-        let currentField = '';
-        let inQuotes = false;
-        for (let i = 0; i < line.length; i++) {
-            const char = line[i];
-            if (char === '"') {
-                if (inQuotes && i + 1 < line.length && line[i+1] === '"') {
-                    currentField += '"';
-                    i++; 
-                } else {
-                    inQuotes = !inQuotes;
-                }
-            } else if (char === ',' && !inQuotes) {
-                result.push(currentField);
-                currentField = '';
-            } else {
-                currentField += char;
-            }
+      const result: string[] = [];
+      let currentField = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+          if (inQuotes && i + 1 < line.length && line[i+1] === '"') {
+            currentField += '"';
+            i++; 
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === ',' && !inQuotes) {
+          result.push(currentField.trim());
+          currentField = '';
+        } else {
+          currentField += char;
         }
-        result.push(currentField);
-        return result;
+      }
+      result.push(currentField.trim());
+      return result;
     };
 
-    const headers = parseLine(lines[0]).map(h => h.trim());
+    const originalHeaders = parseLine(lines[0]);
+    const headers = originalHeaders.map(h => h.toLowerCase().replace(/[\s_]+/g, ''));
 
-    // Find column index for required fields, allowing for variations in naming
     const findIndex = (possibleNames: string[]): number => {
-        for (const name of possibleNames) {
-            const index = headers.findIndex(h => h.toLowerCase().replace(/\s+/g, '') === name);
-            if (index !== -1) return index;
-        }
-        return -1;
+      for (const name of possibleNames) {
+        const index = headers.findIndex(h => h === name);
+        if (index !== -1) return index;
+      }
+      return -1;
     };
 
-    const colIdx = {
-        companyName: findIndex(['companyname', 'company name', 'company']),
-        investorName: findIndex(['investorname', 'investor name', 'investor']),
-        email: findIndex(['email', 'emailaddress']),
-        companyDescription: findIndex(['companydescription', 'description']),
-        investmentStage: findIndex(['investmentstage', 'stage']),
-        pastInvestments: findIndex(['pastinvestments']),
+    const requiredHeaders = {
+      investorName: findIndex(['investorname']),
+      contactPerson: findIndex(['contactperson']),
     };
-    
-    if (colIdx.companyName === -1 || colIdx.investorName === -1) {
-        toast({
-            variant: "destructive",
-            title: "Invalid CSV Format",
-            description: "CSV must contain 'Company Name' and 'Investor Name' columns.",
-        });
-        return [];
+
+    if (requiredHeaders.investorName === -1 || requiredHeaders.contactPerson === -1) {
+      toast({
+        variant: "destructive",
+        title: "Invalid CSV Format",
+        description: "CSV must contain 'Investor_Name' and 'Contact_Person' columns.",
+      });
+      return [];
     }
 
-    const companyMap = new Map<string, Company>();
-
-    lines.slice(1).forEach(line => {
-      if (!line.trim()) return;
-
+    const investors: Investor[] = lines.slice(1).map(line => {
+      if (!line.trim()) return null;
       const values = parseLine(line);
-      if (values.length !== headers.length) {
-          console.warn('Skipping malformed CSV row:', line);
-          return;
-      }
-      
-      const getVal = (index: number) => (index !== -1 ? values[index]?.trim() : '') || '';
+      if (values.length !== originalHeaders.length) return null;
 
-      const companyName = getVal(colIdx.companyName);
-      if (!companyName) return;
-
-      const contact: Contact = {
-        investorName: getVal(colIdx.investorName),
-        email: getVal(colIdx.email),
+      const investor: Investor = {
+        Investor_Name: '',
+        Contact_Person: '',
       };
-      // Add all original headers/values to contact object for full data access
-      headers.forEach((header, index) => {
-        contact[header] = values[index]?.trim() || '';
+
+      originalHeaders.forEach((header, index) => {
+        investor[header] = values[index] || '';
       });
 
-      if (companyMap.has(companyName)) {
-        companyMap.get(companyName)!.contacts.push(contact);
-      } else {
-        companyMap.set(companyName, {
-          companyName: companyName,
-          companyDescription: getVal(colIdx.companyDescription),
-          investmentStage: getVal(colIdx.investmentStage),
-          pastInvestments: getVal(colIdx.pastInvestments),
-          contacts: [contact],
-        });
-      }
-    });
+      return investor;
+    }).filter((investor): investor is Investor => investor !== null && !!investor.Investor_Name && !!investor.Contact_Person);
 
-    return Array.from(companyMap.values());
+    if (investors.length === 0 && lines.length > 1) {
+      toast({
+        variant: "destructive",
+        title: "No Data Imported",
+        description: "Could not parse any valid investor records. Please check column headers and data.",
+      });
+      return [];
+    }
+
+    return investors;
   }
 
   const handleFile = useCallback((file: File) => {
@@ -120,9 +104,9 @@ export function CsvUploader() {
       reader.onload = (e) => {
         const text = e.target?.result as string
         try {
-          const parsedCompanies = parseCsv(text)
-          if (parsedCompanies.length > 0) {
-            setPreviewData(parsedCompanies)
+          const parsedInvestors = parseCsv(text)
+          if (parsedInvestors.length > 0) {
+            setPreviewData(parsedInvestors)
           }
         } catch(error) {
           console.error("CSV Parsing failed", error);
@@ -133,7 +117,7 @@ export function CsvUploader() {
     } else {
       toast({ variant: "destructive", title: "Invalid File", description: "Please upload a valid .csv file." })
     }
-  }, [toast, setCompanies])
+  }, [toast])
 
   const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
@@ -155,8 +139,8 @@ export function CsvUploader() {
   }
   
   const handleConfirm = () => {
-    setCompanies(previewData)
-    toast({ title: "Success", description: `${previewData.length} companies imported.` })
+    setInvestors(previewData)
+    toast({ title: "Success", description: `${previewData.length} investors imported.` })
     setPreviewData([])
   }
 
@@ -185,24 +169,24 @@ export function CsvUploader() {
           <DialogHeader>
             <DialogTitle>Confirm Import</DialogTitle>
           </DialogHeader>
-          <p>{previewData.length} companies found. Please review before importing.</p>
+          <p>{previewData.length} investors found. Please review before importing.</p>
           <ScrollArea className="h-[50vh] mt-4">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Company Name</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Investment Stage</TableHead>
-                  <TableHead># Contacts</TableHead>
+                  <TableHead>Investor Name</TableHead>
+                  <TableHead>Contact Person</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead>Investor Type</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {previewData.map(company => (
-                  <TableRow key={company.companyName}>
-                    <TableCell>{company.companyName}</TableCell>
-                    <TableCell className="truncate max-w-xs">{company.companyDescription}</TableCell>
-                    <TableCell>{company.investmentStage}</TableCell>
-                    <TableCell>{company.contacts.length}</TableCell>
+                {previewData.map((investor, index) => (
+                  <TableRow key={index}>
+                    <TableCell>{investor.Investor_Name}</TableCell>
+                    <TableCell>{investor.Contact_Person}</TableCell>
+                    <TableCell>{investor.Location}</TableCell>
+                    <TableCell>{investor.Investor_Type}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

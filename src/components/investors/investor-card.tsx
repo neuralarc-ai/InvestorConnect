@@ -1,36 +1,71 @@
 "use client"
 
-import type { Company } from "@/lib/types"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import type { Investor } from "@/lib/types"
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Users } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { User, Briefcase, MapPin, TrendingUp, ExternalLink } from "lucide-react"
 
 interface InvestorCardProps {
-  company: Company
+  investor: Investor
   onSelect: () => void
 }
 
-export function InvestorCard({ company, onSelect }: InvestorCardProps) {
+export function InvestorCard({ investor, onSelect }: InvestorCardProps) {
   return (
     <Card
       onClick={onSelect}
-      className="cursor-pointer transition-all hover:shadow-lg hover:-translate-y-1"
+      className="cursor-pointer transition-all hover:shadow-lg hover:-translate-y-1 flex flex-col"
     >
       <CardHeader>
-        <CardTitle className="font-headline tracking-tight">{company.companyName}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <p className="text-sm text-muted-foreground line-clamp-2 h-10">
-          {company.companyDescription}
-        </p>
-        <div className="flex items-center justify-between">
-          <Badge variant="secondary">{company.investmentStage}</Badge>
-          <div className="flex items-center text-sm text-muted-foreground">
-            <Users className="mr-1.5 h-4 w-4" />
-            <span>{company.contacts.length}</span>
+        <CardTitle className="font-headline tracking-tight flex items-start justify-between">
+          <span className="line-clamp-2">{investor.Investor_Name}</span>
+          {investor.LinkedIn && (
+            <Button
+              variant="ghost"
+              size="icon"
+              asChild
+              onClick={(e) => e.stopPropagation()}
+              className="flex-shrink-0"
+            >
+              <a href={investor.LinkedIn} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="h-4 w-4" />
+              </a>
+            </Button>
+          )}
+        </CardTitle>
+        <div className="text-sm text-muted-foreground pt-1 space-y-1">
+          <div className="flex items-center">
+            <User className="mr-2 h-4 w-4" />
+            <span>{investor.Contact_Person}</span>
           </div>
+          {investor.Designation && (
+             <div className="flex items-center">
+              <Briefcase className="mr-2 h-4 w-4" />
+              <span>{investor.Designation}</span>
+            </div>
+          )}
         </div>
+      </CardHeader>
+      <CardContent className="flex-grow">
+        <p className="text-sm text-muted-foreground line-clamp-3 h-[60px]">
+          {investor.Overview}
+        </p>
       </CardContent>
+      <CardFooter className="flex-wrap gap-2">
+        {investor.Location &&
+          <Badge variant="secondary" className="flex items-center">
+            <MapPin className="mr-1.5 h-3 w-3" />
+            {investor.Location}
+          </Badge>
+        }
+        {investor.Investment_Score &&
+          <Badge variant="secondary" className="flex items-center">
+            <TrendingUp className="mr-1.5 h-3 w-3" />
+            {investor.Investment_Score}
+          </Badge>
+        }
+      </CardFooter>
     </Card>
   )
 }

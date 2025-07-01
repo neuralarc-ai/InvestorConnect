@@ -6,28 +6,28 @@ import { CsvUploader } from "@/components/investors/csv-uploader"
 import { InvestorCard } from "@/components/investors/investor-card"
 import { InvestorDetailsSheet } from "@/components/investors/investor-details-sheet"
 import { Header } from "@/components/shared/header"
-import type { Company } from "@/lib/types"
+import type { Investor } from "@/lib/types"
 
 export function InvestorDashboard() {
-  const { companies } = useInvestors()
-  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null)
+  const { investors } = useInvestors()
+  const [selectedInvestor, setSelectedInvestor] = useState<Investor | null>(null)
 
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
-      <main className={`flex-grow container py-8 ${companies.length === 0 ? 'flex items-center justify-center' : ''}`}>
-        {companies.length > 0 ? (
+      <main className={`flex-grow container py-8 ${investors.length === 0 ? 'flex items-center justify-center' : ''}`}>
+        {investors.length > 0 ? (
           <div className="w-full">
             <div className="mb-8">
               <p className="text-lg font-semibold mb-2">Import More Investors</p>
               <CsvUploader />
             </div>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {companies.map((company) => (
+              {investors.map((investor, index) => (
                 <InvestorCard
-                  key={company.companyName}
-                  company={company}
-                  onSelect={() => setSelectedCompany(company)}
+                  key={`${investor.Investor_Name}-${index}`}
+                  investor={investor}
+                  onSelect={() => setSelectedInvestor(investor)}
                 />
               ))}
             </div>
@@ -43,9 +43,9 @@ export function InvestorDashboard() {
         )}
       </main>
       <InvestorDetailsSheet
-        company={selectedCompany}
-        isOpen={!!selectedCompany}
-        onClose={() => setSelectedCompany(null)}
+        investor={selectedInvestor}
+        isOpen={!!selectedInvestor}
+        onClose={() => setSelectedInvestor(null)}
       />
     </div>
   )

@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import type { Company, Contact } from "@/lib/types"
+import { useState, useEffect } from "react"
+import type { Investor } from "@/lib/types"
 import { generatePersonalizedEmail, type GeneratePersonalizedEmailInput } from "@/ai/flows/generate-personalized-email"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
@@ -11,31 +11,65 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { Wand2, Mail, Copy, Loader2, Send } from "lucide-react"
+import { Wand2, Mail, Copy, Loader2, Send, Briefcase, Globe, Phone, User, Building, MapPin, TrendingUp, Info } from "lucide-react"
 
 interface InvestorDetailsSheetProps {
-  company: Company | null
+  investor: Investor | null
   isOpen: boolean
   onClose: () => void
 }
 
-export function InvestorDetailsSheet({ company, isOpen, onClose }: InvestorDetailsSheetProps) {
-  const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
+function DetailItem({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value?: string }) {
+  if (!value) return null;
+  return (
+    <div className="flex items-start">
+      <Icon className="h-4 w-4 mr-3 mt-1 text-muted-foreground flex-shrink-0" />
+      <div>
+        <p className="font-semibold">{label}</p>
+        <p className="text-sm text-muted-foreground">{value}</p>
+      </div>
+    </div>
+  )
+}
+
+function DetailLinkItem({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value?: string }) {
+    if (!value) return null;
+    const href = value.startsWith('http') ? value : `https://${value}`;
+    return (
+      <div className="flex items-start">
+        <Icon className="h-4 w-4 mr-3 mt-1 text-muted-foreground flex-shrink-0" />
+        <div>
+          <p className="font-semibold">{label}</p>
+          <a href={href} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-500 hover:underline break-all">
+            {value}
+          </a>
+        </div>
+      </div>
+    )
+  }
+
+export function InvestorDetailsSheet({ investor, isOpen, onClose }: InvestorDetailsSheetProps) {
   const [generatedEmail, setGeneratedEmail] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
 
+  useEffect(() => {
+    if (isOpen) {
+      setGeneratedEmail("")
+      setIsLoading(false)
+    }
+  }, [isOpen])
+
   const handleGenerateEmail = async () => {
-    if (!company || !selectedContact) return
+    if (!investor) return
     setIsLoading(true)
     setGeneratedEmail("")
     try {
       const input: GeneratePersonalizedEmailInput = {
-        investorName: selectedContact.investorName,
-        companyName: company.companyName,
-        companyDescription: company.companyDescription,
-        investmentStage: company.investmentStage,
-        pastInvestments: company.pastInvestments,
+        Contact_Person: investor.Contact_Person,
+        Designation: investor.Designation || 'a leader',
+        Investor_Name: investor.Investor_Name,
+        Location: investor.Location || 'their region',
         ourCompanyName: "Our Awesome Startup",
         pitchSummary: "We are building a revolutionary platform to change the world."
       }
@@ -51,8 +85,7 @@ export function InvestorDetailsSheet({ company, isOpen, onClose }: InvestorDetai
   }
 
   const handleSendEmail = () => {
-    // Mock sending email
-    toast({ title: "Email Sent (Mock)", description: `Email to ${selectedContact?.email} has been logged.` })
+    toast({ title: "Email Sent (Mock)", description: `Email to ${investor?.Email} has been logged.` })
   }
 
   const handleCopyToClipboard = () => {
@@ -60,87 +93,71 @@ export function InvestorDetailsSheet({ company, isOpen, onClose }: InvestorDetai
     toast({ title: "Copied to Clipboard" })
   }
 
-  const handleSheetClose = () => {
-    onClose()
-    setTimeout(() => {
-      setSelectedContact(null)
-      setGeneratedEmail("")
-    }, 300) // Delay reset to allow sheet to close gracefully
-  }
-
   return (
-    <Sheet open={isOpen} onOpenChange={handleSheetClose}>
+    <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent className="w-full sm:max-w-2xl p-0">
         <ScrollArea className="h-full">
-          {company && (
+          {investor && (
             <>
               <SheetHeader className="p-6">
-                <SheetTitle className="font-headline text-2xl">{company.companyName}</SheetTitle>
-                <SheetDescription>{company.companyDescription}</SheetDescription>
-                <div className="flex flex-wrap gap-2 pt-2">
-                  <Badge variant="secondary">{company.investmentStage}</Badge>
-                </div>
+                <SheetTitle className="font-headline text-2xl">{investor.Contact_Person}</SheetTitle>
+                <SheetDescription>{investor.Designation} at {investor.Investor_Name}</SheetDescription>
               </SheetHeader>
               <Separator />
               <div className="p-6 space-y-6">
+                
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg font-headline">Contacts</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {company.contacts.map((contact, index) => (
-                        <div
-                          key={index}
-                          className={`p-3 rounded-md cursor-pointer transition-colors ${selectedContact?.email === contact.email ? 'bg-accent' : 'hover:bg-accent/50'}`}
-                          onClick={() => {
-                            setSelectedContact(contact)
-                            setGeneratedEmail("")
-                          }}
-                        >
-                          <p className="font-semibold">{contact.investorName}</p>
-                          <p className="text-sm text-muted-foreground flex items-center">
-                            <Mail className="mr-2 h-3 w-3" /> {contact.email}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
+                    <CardHeader><CardTitle className="text-lg font-headline">Contact Information</CardTitle></CardHeader>
+                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <DetailItem icon={Mail} label="Email" value={investor.Email} />
+                        <DetailItem icon={Phone} label="Phone" value={investor.Phone} />
+                        <DetailLinkItem icon={User} label="LinkedIn" value={investor.LinkedIn} />
+                        <DetailLinkItem icon={Building} label="Company LinkedIn" value={investor.Company_LinkedIn} />
+                        <DetailLinkItem icon={Globe} label="Website" value={investor.Website} />
+                    </CardContent>
                 </Card>
 
-                {selectedContact && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg font-headline">Generate Email</CardTitle>
-                      <p className="text-sm text-muted-foreground">For: {selectedContact.investorName}</p>
-                    </CardHeader>
+                <Card>
+                    <CardHeader><CardTitle className="text-lg font-headline">Investor Details</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
-                      <Button onClick={handleGenerateEmail} disabled={isLoading}>
-                        {isLoading ? (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                          <Wand2 className="mr-2 h-4 w-4" />
-                        )}
-                        Generate Personalized Email
-                      </Button>
-                      
-                      {generatedEmail && (
-                        <div className="space-y-4 pt-4">
-                          <Textarea
-                            value={generatedEmail}
-                            onChange={(e) => setGeneratedEmail(e.target.value)}
-                            rows={15}
-                            className="text-sm"
-                          />
-                          <div className="flex gap-2">
-                            <Button onClick={handleSendEmail}><Send className="mr-2 h-4 w-4"/>Send Email (Mock)</Button>
-                            <Button variant="outline" onClick={handleCopyToClipboard}><Copy className="mr-2 h-4 w-4"/>Copy</Button>
-                          </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                           <DetailItem icon={MapPin} label="Location" value={investor.Location} />
+                           <DetailItem icon={Briefcase} label="Investor Type" value={investor.Investor_Type} />
+                           <DetailItem icon={TrendingUp} label="Investment Score" value={investor.Investment_Score} />
+                           <DetailItem icon={Info} label="Founded Year" value={investor.Founded_Year} />
                         </div>
-                      )}
+                        <DetailItem icon={Info} label="Practice Areas" value={investor.Practice_Areas} />
+                        <DetailItem icon={Info} label="Overview" value={investor.Overview} />
+                        <DetailItem icon={Info} label="Description" value={investor.Description} />
                     </CardContent>
-                  </Card>
-                )}
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg font-headline">Generate Email</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <Button onClick={handleGenerateEmail} disabled={isLoading}>
+                      {isLoading ? <Loader2 className="animate-spin" /> : <Wand2 />}
+                      Generate Personalized Email
+                    </Button>
+                    
+                    {generatedEmail && (
+                      <div className="space-y-4 pt-4">
+                        <Textarea
+                          value={generatedEmail}
+                          onChange={(e) => setGeneratedEmail(e.target.value)}
+                          rows={15}
+                          className="text-sm"
+                        />
+                        <div className="flex gap-2">
+                          <Button onClick={handleSendEmail}><Send/>Send Email (Mock)</Button>
+                          <Button variant="outline" onClick={handleCopyToClipboard}><Copy/>Copy</Button>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               </div>
             </>
           )}

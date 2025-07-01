@@ -1,20 +1,20 @@
 "use client"
 
 import React, { createContext, useContext, useState, type ReactNode } from "react"
-import type { Company } from "@/lib/types"
+import type { Investor } from "@/lib/types"
 
 interface InvestorContextType {
-  companies: Company[]
-  setCompanies: React.Dispatch<React.SetStateAction<Company[]>>
+  investors: Investor[]
+  setInvestors: React.Dispatch<React.SetStateAction<Investor[]>>
 }
 
 const InvestorContext = createContext<InvestorContextType | undefined>(undefined)
 
 export function InvestorProvider({ children }: { children: ReactNode }) {
-  const [companies, setCompanies] = useState<Company[]>([])
+  const [investors, setInvestors] = useState<Investor[]>([])
 
   return (
-    <InvestorContext.Provider value={{ companies, setCompanies }}>
+    <InvestorContext.Provider value={{ investors, setInvestors }}>
       {children}
     </InvestorContext.Provider>
   )
