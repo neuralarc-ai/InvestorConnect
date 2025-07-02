@@ -133,11 +133,31 @@ const prompt = ai.definePrompt({
   name: 'generatePersonalizedEmailPrompt',
   input: {schema: GeneratePersonalizedEmailInputSchema},
   output: {schema: GeneratePersonalizedEmailOutputSchema},
-  prompt: encodeToUtf8(sanitizeText(`Write a personalized, concise outreach email to {{{Contact_Person}}}, who is a {{{Designation}}} at {{{Investor_Name}}}, located in {{{Location}}}.
+  prompt: encodeToUtf8(sanitizeText(`Generate only the email body content using this exact template format, replacing the placeholder text with appropriate personalized content. Do NOT include the subject line:
 
-Focus on introducing our AI startup, "{{{ourCompanyName}}}", and expressing interest in discussing synergies or funding. Our startup specializes in: {{{pitchSummary}}}.
+Dear {{{Contact_Person}}},
 
-Use a respectful and professional tone. Keep the email concise but engaging, around 3-4 paragraphs.`)),
+Neural Arc is a generative artificial intelligence company establishing the cognitive infrastructure for enterprises. Our intelligent agent systems integrate natively with existing data, allowing organisations to automate decisions, streamline workflows, and extract actionable insights without costly system replacement.
+
+Key reasons to consider an investment in Neural Arc:
+	1.	Strong Market Momentum: The enterprise artificial intelligence sector is shifting decisively toward agentic automation, and Neural Arc occupies a central position in this movement.
+	2.	Interoperable Technology: Our proprietary AI agent framework connects effortlessly across diverse data stacks, ensuring rapid deployment and minimal integration friction.
+	3.	Scalable Architecture: The platform supports accelerated product rollout across multiple verticals, enabling compounding growth.
+	4.	Experienced Leadership: A founding team with successful exits and deep domain expertise guides strategy, execution, and market penetration.
+
+Neural Arc is not merely developing standalone tools. We are constructing the foundation of enterprise cognition. We are currently raising a seed round and would value the opportunity to discuss how your partnership can accelerate our mission.
+
+Please review our investor presentation and select a convenient time for a brief introductory call:
+	•	Investor Deck: https://pitch.neuralarc.ai (PIN: [PIN_PLACEHOLDER])
+	•	Schedule a Call: https://meet.neuralarc.ai/
+
+Thank you for your consideration. I look forward to our conversation.
+
+Kind regards,
+Aniket Tapre
+Founder and Chief Executive Officer, Neural Arc
+
+Important: Do not use any contractions. Write out full forms (do not, cannot, will not, I am, you are, it is, they are, we are). Use proper formal business English throughout.`)),
 });
 
 const generatePersonalizedEmailFlow = ai.defineFlow(
@@ -182,17 +202,25 @@ const generatePersonalizedEmailFlow = ai.defineFlow(
       return {
         emailContent: `Dear ${encodeToUtf8(sanitizeText(input.Contact_Person))},
 
-I hope this message finds you well. I am reaching out to introduce our company and explore potential collaboration opportunities.
+Neural Arc is a generative artificial intelligence company establishing the cognitive infrastructure for enterprises. Our intelligent agent systems integrate natively with existing data, allowing organisations to automate decisions, streamline workflows, and extract actionable insights without costly system replacement.
 
-At ${encodeToUtf8(sanitizeText(input.Investor_Name))}, I believe there could be valuable synergies between our organizations.
+Key reasons to consider an investment in Neural Arc:
+	1.	Strong Market Momentum: The enterprise artificial intelligence sector is shifting decisively toward agentic automation, and Neural Arc occupies a central position in this movement.
+	2.	Interoperable Technology: Our proprietary AI agent framework connects effortlessly across diverse data stacks, ensuring rapid deployment and minimal integration friction.
+	3.	Scalable Architecture: The platform supports accelerated product rollout across multiple verticals, enabling compounding growth.
+	4.	Experienced Leadership: A founding team with successful exits and deep domain expertise guides strategy, execution, and market penetration.
 
-I would welcome the opportunity to discuss how we might work together and explore potential partnership or investment opportunities.
+Neural Arc is not merely developing standalone tools. We are constructing the foundation of enterprise cognition. We are currently raising a seed round and would value the opportunity to discuss how your partnership can accelerate our mission.
 
-Please let me know if you would be interested in a brief conversation at your convenience.
+Please review our investor presentation and select a convenient time for a brief introductory call:
+	•	Investor Deck: https://pitch.neuralarc.ai (PIN: [PIN_PLACEHOLDER])
+	•	Schedule a Call: https://cal.neuralarc.ai/
 
-Best regards,
-Your Name
-Your Company`
+Thank you for your consideration. I look forward to our conversation.
+
+Kind regards,
+Aniket Tapre
+Founder and Chief Executive Officer, Neural Arc`
       };
     }
   }

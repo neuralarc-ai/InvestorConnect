@@ -1,9 +1,23 @@
+@import url('https://fonts.googleapis.com/css2?family=Fustat:wght@200..800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 body {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Fustat', Arial, Helvetica, sans-serif;
+}
+
+/* Fustat: CSS class for a variable style */
+/*
+  Usage: <element class="fustat-variable font-bold">Text</element>
+  You can also use font-weight utilities or set font-weight directly.
+*/
+.fustat-variable {
+  font-family: "Fustat", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
 }
 
 @layer base {

@@ -166,13 +166,12 @@ function InvestorDialog({
                     </div>
                   )}
                   
-                  <Textarea
-                    value={emailState.content}
-                    onChange={(e) => onTextChange(String(contactId), e.target.value)}
-                    rows={15}
-                    className="text-sm"
-                    placeholder="Generated email content will appear here..."
-                  />
+                  <div className="mt-4">
+                    <div className="font-semibold mb-2">Preview:</div>
+                    <div className="border rounded p-4 bg-white">
+                      <div className="fustat-variable" dangerouslySetInnerHTML={{ __html: emailState.content }} />
+                    </div>
+                  </div>
                   <div className="flex gap-2">
                     <Button 
                       onClick={() => onSendEmail(investor, emailState.content, emailState.pin)}
@@ -262,25 +261,87 @@ export function InvestorDetailsSheet({ investors: investorGroup, isOpen, onClose
       
       const result = await generatePersonalizedEmail(input)
       
-      // Add pitch deck access information to the generated email
-      const pitchUrl = process.env.NEXT_PUBLIC_PITCH_URL || 'https://your-pitch-deck-url.com';
-      const pitchAccessSection = `
-
-<hr style="margin: 30px 0; border: none; border-top: 1px solid #e0e0e0;">
-<h3 style="color: #333; margin-bottom: 15px;">Pitch Deck Access</h3>
-<p>I've also attached access to our detailed pitch deck for your review:</p>
-
-<div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #007bff;">
-  <p style="margin: 5px 0;"><strong>Access Link:</strong> <a href="${pitchUrl}" style="color: #007bff; text-decoration: none;">${pitchUrl}</a></p>
-  <p style="margin: 5px 0;"><strong>Your PIN:</strong> <span style="font-size: 18px; font-weight: bold; color: #28a745; letter-spacing: 2px;">${pin}</span></p>
-</div>
-
-<p style="color: #666; font-size: 14px;"><strong>Important:</strong> This PIN will expire in 48 hours for security purposes. Please let me know if you need any additional information or have questions about our pitch.</p>
-
-<hr style="margin: 30px 0; border: none; border-top: 1px solid #e0e0e0;">
-`;
+      console.log('Generated email content:', result.emailContent);
+      console.log('Generated PIN:', pin);
       
-      const emailWithPitchAccess = result.emailContent + pitchAccessSection;
+      // Replace the PIN placeholder with the actual PIN - try multiple possible formats
+      let emailWithPin = result.emailContent;
+      
+      // Try different possible placeholder formats
+      const pinPlaceholders = [
+        '[PIN_PLACEHOLDER]',
+        '[PIN will be added automatically]',
+        'INVESTOR_PIN',
+        '[PIN]',
+        'PIN_PLACEHOLDER'
+      ];
+      
+      for (const placeholder of pinPlaceholders) {
+        if (emailWithPin.includes(placeholder)) {
+          emailWithPin = emailWithPin.replace(placeholder, pin);
+          console.log(`Replaced placeholder "${placeholder}" with PIN: ${pin}`);
+          break;
+        }
+      }
+      
+      // If no placeholder found, try to find and replace any line containing "PIN:" with the actual PIN
+      if (!emailWithPin.includes(pin)) {
+        const lines = emailWithPin.split('\n');
+        const updatedLines = lines.map(line => {
+          if (line.includes('PIN:') && !line.includes(pin)) {
+            // Replace any text after "PIN:" with the actual PIN
+            const pinIndex = line.indexOf('PIN:');
+            const beforePin = line.substring(0, pinIndex + 4); // Include "PIN:"
+            return `${beforePin} ${pin}`;
+          }
+          return line;
+        });
+        emailWithPin = updatedLines.join('\n');
+      }
+      
+      console.log('Email after PIN replacement:', emailWithPin);
+      
+      // Final safety check: if PIN is still not in the email, add it manually
+      if (!emailWithPin.includes(pin)) {
+        console.log('PIN not found in email, adding manually');
+        // Find the line with pitch deck URL and add PIN after it
+        const lines = emailWithPin.split('\n');
+        const updatedLines = lines.map((line, index) => {
+          if (line.includes('https://pitch.neuralarc.ai')) {
+            // Add PIN line after the pitch deck URL line
+            return line + '\n\nTo access exclusive investor materials, please use the following PIN: ' + pin;
+          }
+          return line;
+        });
+        emailWithPin = updatedLines.join('\n');
+        console.log('Email after manual PIN addition:', emailWithPin);
+      }
+      
+      // Convert the email content to proper HTML format
+      const emailHtml = emailWithPin
+        .split('\n')
+        .map(line => {
+          if (line.trim() === '') return '<br>';
+          if (line.includes('Dear') && line.includes(',')) {
+            return `<p style="margin: 0 0 16px 0;">${line}</p>`;
+          }
+          if (line.includes('Best regards,')) {
+            return `<p style="margin: 16px 0 8px 0;"><strong>${line}</strong></p>`;
+          }
+          if (line.startsWith('[') && line.endsWith(']')) {
+            return `<p style="margin: 4px 0; color: #666;">${line}</p>`;
+          }
+          if (line.includes('PIN:') && line.includes(pin)) {
+            return `<p style="margin: 16px 0;">${line.replace(pin, `<span style="font-size: 18px; font-weight: bold; color: #28a745; letter-spacing: 2px;">${pin}</span>`)}</p>`;
+          }
+          if (line.includes('https://pitch.neuralarc.ai')) {
+            return `<p style="margin: 16px 0;">${line.replace('https://pitch.neuralarc.ai', '<a href="https://pitch.neuralarc.ai" style="color: #007bff; text-decoration: none;">https://pitch.neuralarc.ai</a>')}</p>`;
+          }
+          return `<p style="margin: 0 0 16px 0;">${line}</p>`;
+        })
+        .join('');
+      
+      const emailWithPitchAccess = emailHtml;
 
 
       
@@ -297,7 +358,7 @@ export function InvestorDetailsSheet({ investors: investorGroup, isOpen, onClose
   }
 
   const handleSendEmail = async (investor: Investor, emailContent: string, pin?: string) => {
-    const subject = `Outreach from ${sanitizeText(String(investor.investor_name))}`;
+    const subject = `Investment Opportunity in Our Agile AI Solutions Company`;
     const to = sanitizeText(String(investor.email)) || String(investor.email) || String(investor.id) || `contact-fallback`;
     
     if (!to) {
