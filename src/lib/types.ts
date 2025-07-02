@@ -13,12 +13,12 @@ export interface Investor {
   country?: string;
   state?: string;
   city?: string;
-  founded_year?: string;
+  founded_year?: number;
   investor_type?: string;
   practice_areas?: string;
   description?: string;
   overview?: string;
-  investment_score?: string;
+  investment_score?: number;
   business_models?: string;
   contact_summary?: string;
   location?: string;

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useInvestors } from "@/providers/investor-provider"
 import { useToast } from "@/hooks/use-toast"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
@@ -21,6 +21,17 @@ export function AddInvestorDialog({ isOpen, onClose }: AddInvestorDialogProps) {
   const { investors, setInvestors } = useInvestors()
   const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  useEffect(() => {
+    const stored = sessionStorage.getItem("investors");
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) setInvestors(parsed);
+      } catch {}
+    }
+    // eslint-disable-next-line
+  }, []);
 
   const [formData, setFormData] = useState({
     investor_name: "",
@@ -57,24 +68,26 @@ export function AddInvestorDialog({ isOpen, onClose }: AddInvestorDialogProps) {
 
     try {
       const newInvestor: Investor = {
-        Investor_Name: formData.investor_name.trim(),
-        Contact_Person: formData.contact_person.trim(),
-        Designation: formData.designation.trim() || undefined,
-        Email: formData.email.trim() || undefined,
-        Phone: formData.phone.trim() || undefined,
-        Website: formData.website.trim() || undefined,
-        LinkedIn: formData.linkedin.trim() || undefined,
-        Company_LinkedIn: formData.company_linkedin.trim() || undefined,
-        Twitter: formData.twitter.trim() || undefined,
-        Facebook: formData.facebook.trim() || undefined,
-        Country: formData.country.trim() || undefined
+        investor_name: formData.investor_name.trim(),
+        contact_person: formData.contact_person.trim(),
+        designation: formData.designation.trim() || undefined,
+        email: formData.email.trim() || undefined,
+        phone: formData.phone.trim() || undefined,
+        website: formData.website.trim() || undefined,
+        linkedin: formData.linkedin.trim() || undefined,
+        company_linkedin: formData.company_linkedin.trim() || undefined,
+        twitter: formData.twitter.trim() || undefined,
+        facebook: formData.facebook.trim() || undefined,
+        country: formData.country.trim() || undefined
       }
 
-      setInvestors(prev => [...prev, newInvestor])
+      const updatedInvestors = [...(Array.isArray(investors) ? investors : []), newInvestor];
+      setInvestors(updatedInvestors);
+      sessionStorage.setItem("investors", JSON.stringify(updatedInvestors));
 
       toast({
         title: "Investor Added Successfully",
-        description: `${newInvestor.Investor_Name} has been added to your investor list.`
+        description: `${newInvestor.investor_name} has been added to your investor list.`
       })
 
       setFormData({

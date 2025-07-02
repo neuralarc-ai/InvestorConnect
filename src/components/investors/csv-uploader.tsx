@@ -11,7 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { UploadCloud } from "lucide-react"
 import { supabase } from "@/lib/supabaseClient"
 
-const FIELD_MAP = {
+const FIELD_MAP: { [key: string]: string[] } = {
   investor_name: [
     "Investor Name", "Name", "Name of Investor", "Investor", "Full Name", "Investor_FullName", "Lead Investor",
     "Primary Investor", "InvestorName", "Investor", "Investor Full Name", "Company", "Company Name", "Industry"
@@ -55,7 +55,21 @@ const FIELD_MAP = {
   country: [
     "Country", "Nation", "Location", "Region", "Country of Origin", "Headquarter Country", "Home Country", 
     "Investor Country", "CountryName", "Country Code", "Country/Region"
-  ]
+  ],
+  state: ["State", "Province", "Region State", "Investor State"],
+  city: ["City", "Town", "Municipality", "Investor City"],
+  founded_year: ["Founded Year", "Year Founded", "Establishment Year", "Year of Foundation", "Foundation Year"],
+  investor_type: ["Investor Type", "Type", "Type of Investor", "Category", "Investor Category"],
+  practice_areas: ["Practice Areas", "Areas of Practice", "Expertise", "Focus Areas", "Specialization"],
+  description: ["Description", "About", "Summary", "Company Description", "Investor Description"],
+  overview: ["Overview", "Company Overview", "Investor Overview", "Profile Overview"],
+  investment_score: ["Investment Score", "Score", "Investor Score", "Rating", "Investment Rating"],
+  business_models: ["Business Models", "Model", "Business Model", "Operating Model"],
+  contact_summary: ["Contact Summary", "Contact Info", "Contact Information", "Contact Details"],
+  location: ["Location", "HQ Location", "Headquarters", "Office Location"],
+  domain_name: ["Domain Name", "Domain", "Website Domain", "Company Domain"],
+  blog_url: ["Blog URL", "Blog", "Company Blog", "Investor Blog"],
+  tracxn_url: ["Tracxn URL", "Tracxn", "Tracxn Profile", "Tracxn Link"]
 };
 
 function normalizeHeader(header: string) {
@@ -78,8 +92,16 @@ function mapHeadersToDbColumns(headers: string[]): Record<string, number> {
 }
 
 const DB_COLUMNS = [
-  "investor_name", "contact_person", "designation", "email", "phone", "website", "linkedin", "company_linkedin", "twitter", "facebook", "country"
+  "investor_name", "contact_person", "designation", "email", "phone", "website", "linkedin", "company_linkedin", "twitter", "facebook", "country",
+  "state", "city", "founded_year", "investor_type", "practice_areas", "description", "overview", "investment_score", "business_models", "contact_summary",
+  "location", "domain_name", "blog_url", "tracxn_url"
 ];
+
+export function CsvUploader() {
+  const { setInvestors } = useInvestors()
+  const { toast } = useToast()
+  const [isDragging, setIsDragging] = useState(false)
+  const [previewData, setPreviewData] = useState<Investor[]>([])
 
   const parseCsv = (csvText: string): Investor[] => {
     const lines = csvText.trim().split(/\r\n?|\n/);
@@ -110,14 +132,14 @@ const DB_COLUMNS = [
     };
 
     const originalHeaders = parseLine(lines[0]);
-  const headerMap = mapHeadersToDbColumns(originalHeaders);
+    const headerMap = mapHeadersToDbColumns(originalHeaders);
 
-  // Require at least investor_name and contact_person
-  if (headerMap.investor_name === undefined || headerMap.contact_person === undefined) {
+    // Require at least investor_name and contact_person
+    if (headerMap.investor_name === undefined || headerMap.contact_person === undefined) {
       toast({
         variant: "destructive",
         title: "Invalid CSV Format",
-      description: "CSV must contain recognizable company/investor name and contact person columns.",
+        description: "CSV must contain recognizable company/investor name and contact person columns.",
       });
       return [];
     }
@@ -127,13 +149,24 @@ const DB_COLUMNS = [
       const values = parseLine(line);
       if (values.length !== originalHeaders.length) return null;
 
-    const investor: Investor = {} as Investor;
-    DB_COLUMNS.forEach(col => {
-      const idx = headerMap[col];
-      investor[col] = idx !== undefined ? values[idx] || null : null;
+      const investor: Investor = {} as Investor;
+      DB_COLUMNS.forEach(col => {
+        const idx = headerMap[col];
+        let value = idx !== undefined ? (values[idx] || undefined) : undefined;
+        // Convert integer fields to int or null
+        if (col === 'founded_year' || col === 'investment_score') {
+          if (value !== undefined && value !== null && value !== '') {
+            // Remove decimal if present, parse as int
+            const intVal = parseInt(String(value).split('.')[0], 10);
+            value = isNaN(intVal) ? undefined : intVal;
+          } else {
+            value = undefined;
+          }
+        }
+        investor[col] = value;
       });
       return investor;
-  }).filter((investor): investor is Investor => investor !== null && !!investor.investor_name && !!investor.contact_person);
+    }).filter((investor): investor is Investor => investor !== null && !!investor.investor_name && !!investor.contact_person);
 
     if (investors.length === 0 && lines.length > 1) {
       toast({
@@ -146,12 +179,6 @@ const DB_COLUMNS = [
 
     return investors;
   }
-
-export function CsvUploader() {
-  const { setInvestors } = useInvestors()
-  const { toast } = useToast()
-  const [isDragging, setIsDragging] = useState(false)
-  const [previewData, setPreviewData] = useState<Investor[]>([])
 
   const handleFile = useCallback((file: File) => {
     if (file && (file.type === "text/csv" || file.name.endsWith('.csv'))) {
@@ -198,17 +225,15 @@ export function CsvUploader() {
     toast({ title: "Success", description: `${previewData.length} investors imported.` })
     // Supabase insert logic
     if (previewData.length > 0) {
-      // Map to DB columns for Supabase
-      const rows = previewData.map(inv => {
+      const { error } = await supabase.from('investors').insert(previewData.map(inv => {
         const row: Record<string, any> = {};
         DB_COLUMNS.forEach(col => {
-          row[col] = inv[col] || null;
+          row[col] = inv[col] ?? null;
         });
         return row;
-      });
-      const { error } = await supabase.from('investors').insert(rows);
+      }));
       if (error) {
-        toast({ variant: "destructive", title: "Supabase Error", description: error.message });
+        toast({ variant: "destructive", title: "Upload Error", description: error.message });
       }
     }
     setPreviewData([])

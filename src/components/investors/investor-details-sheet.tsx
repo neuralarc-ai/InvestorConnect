@@ -20,17 +20,17 @@ interface InvestorDetailsSheetProps {
 }
 
 // Cleaner function to sanitize text for byte-sensitive areas
-function sanitizeText(input: string | undefined) {
-  if (!input) return '';
+function sanitizeText(input: string | number | undefined | null) {
+  if (input === undefined || input === null) return '';
+  const str = String(input);
   try {
-    // More aggressive sanitization
-    let sanitized = input.normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
+    let sanitized = str.normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
     sanitized = sanitized.replace(/[^\x00-\x7F]/g, '');
     sanitized = sanitized.replace(/[\x00-\x1F\x7F]/g, '');
     return sanitized;
   } catch (error) {
     console.warn('Text sanitization error:', error);
-    return input.replace(/[^\x00-\x7F]/g, '');
+    return str.replace(/[^\x00-\x7F]/g, '');
   }
 }
 
@@ -39,9 +39,9 @@ function generatePin(): string {
   return Math.floor(1000 + Math.random() * 9000).toString()
 }
 
-function DetailItem({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value?: string }) {
-  if (!value) return null;
-  const safeValue = sanitizeText(value as string);
+function DetailItem({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value?: string | number }) {
+  if (value === undefined || value === null) return null;
+  const safeValue = sanitizeText(value);
   return (
     <div className="flex items-start">
       <Icon className="h-4 w-4 mr-3 mt-1 text-muted-foreground flex-shrink-0" />
@@ -53,22 +53,22 @@ function DetailItem({ icon: Icon, label, value }: { icon: React.ElementType, lab
   )
 }
 
-function DetailLinkItem({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value?: string }) {
-    if (!value) return null;
-    const safeValue = sanitizeText(value as string);
-    const href = safeValue.startsWith('http') ? safeValue : `https://${safeValue}`;
-    return (
-      <div className="flex items-start">
-        <Icon className="h-4 w-4 mr-3 mt-1 text-muted-foreground flex-shrink-0" />
-        <div>
-          <p className="font-semibold">{label}</p>
-          <a href={href} target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-2 break-all">
-            {safeValue || 'N/A'}
-          </a>
-        </div>
+function DetailLinkItem({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value?: string | number }) {
+  if (value === undefined || value === null) return null;
+  const safeValue = sanitizeText(value);
+  const href = safeValue.startsWith('http') ? safeValue : `https://${safeValue}`;
+  return (
+    <div className="flex items-start">
+      <Icon className="h-4 w-4 mr-3 mt-1 text-muted-foreground flex-shrink-0" />
+      <div>
+        <p className="font-semibold">{label}</p>
+        <a href={href} target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-2 break-all">
+          {safeValue || 'N/A'}
+        </a>
       </div>
-    )
-  }
+    </div>
+  )
+}
 
 type EmailState = {
   isLoading: boolean;
@@ -210,34 +210,6 @@ export function InvestorDetailsSheet({ investors: investorGroup, isOpen, onClose
   const { toast } = useToast()
 
   const primaryInvestor = investorGroup?.[0];
-
-  // Gemini firm details state
-  const [firmDetails, setFirmDetails] = useState<string | null>(null);
-  const [firmDetailsLoading, setFirmDetailsLoading] = useState(false);
-
-  useEffect(() => {
-    if (isOpen && primaryInvestor) {
-      setFirmDetailsLoading(true);
-      fetch('/api/firm-details', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          investor_name: String(primaryInvestor.investor_name),
-          location: String(primaryInvestor.location),
-          investor_type: String(primaryInvestor.investor_type),
-          investment_score: String(primaryInvestor.investment_score),
-          practice_areas: String(primaryInvestor.practice_areas),
-          overview: String(primaryInvestor.overview),
-        }),
-      })
-        .then(res => res.json())
-        .then(res => {
-          setFirmDetails(res.details);
-          setFirmDetailsLoading(false);
-        })
-        .catch(() => setFirmDetailsLoading(false));
-    }
-  }, [isOpen, primaryInvestor]);
 
   useEffect(() => {
     if (isOpen) {
@@ -426,31 +398,31 @@ export function InvestorDetailsSheet({ investors: investorGroup, isOpen, onClose
 
   return (
     <>
-      <Sheet open={isOpen} onOpenChange={onClose}>
-        <SheetContent className="w-full sm:max-w-4xl p-0">
-          <ScrollArea className="h-full">
-            {primaryInvestor && investorGroup && (
-              <>
-                <SheetHeader className="p-6">
+    <Sheet open={isOpen} onOpenChange={onClose}>
+      <SheetContent className="w-full sm:max-w-4xl p-0">
+        <ScrollArea className="h-full">
+          {primaryInvestor && investorGroup && (
+            <>
+              <SheetHeader className="p-6">
                   <SheetTitle className="font-headline text-2xl">{sanitizeText(String(primaryInvestor.investor_name))}</SheetTitle>
-                  <SheetDescription>{investorGroup.length} contact{investorGroup.length > 1 ? 's' : ''} found at this firm.</SheetDescription>
-                </SheetHeader>
-                <Separator />
-                <div className="p-6">
+                <SheetDescription>{investorGroup.length} contact{investorGroup.length > 1 ? 's' : ''} found at this firm.</SheetDescription>
+              </SheetHeader>
+              <Separator />
+              <div className="p-6">
                   <Card className="mb-6">
                     <CardHeader><CardTitle className="text-lg font-headline">Company Details</CardTitle></CardHeader>
-                    <CardContent className="space-y-6">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <CardContent className="space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <DetailItem icon={MapPin} label="Location" value={primaryInvestor.location || 'N/A'} />
                         <DetailItem icon={Briefcase} label="Investor Type" value={primaryInvestor.investor_type || 'N/A'} />
                         <DetailItem icon={TrendingUp} label="Investment Score" value={primaryInvestor.investment_score || 'N/A'} />
                         <DetailItem icon={Info} label="Practice Areas" value={primaryInvestor.practice_areas || 'N/A'} />
-                      </div>
-                      <Separator />
+                                    </div>
+                                    <Separator />
                       <DetailItem icon={Info} label="Overview" value={primaryInvestor.overview || 'N/A'} />
-                    </CardContent>
-                  </Card>
-
+                                </CardContent>
+                            </Card>
+            
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {investorGroup.map((investor) => {
                       const cardKey = investor.id ? String(investor.id) : `contact-${sanitizeText(String(investor.contact_person))}`;
@@ -471,7 +443,7 @@ export function InvestorDetailsSheet({ investors: investorGroup, isOpen, onClose
                                 {sanitizeText(String(investor.designation))}
                               </p>
                             )}
-                          </CardHeader>
+                              </CardHeader>
                           <CardContent className="space-y-3">
                             {investor.email && (
                               <div className="flex items-center text-sm text-muted-foreground">
@@ -483,25 +455,25 @@ export function InvestorDetailsSheet({ investors: investorGroup, isOpen, onClose
                               <div className="flex items-center text-sm text-muted-foreground">
                                 <Phone className="h-4 w-4 mr-2" />
                                 <span>{sanitizeText(String(investor.phone)) || 'N/A'}</span>
-                              </div>
+                                    </div>
                             )}
                             {investor.location && (
                               <div className="flex items-center text-sm text-muted-foreground">
                                 <MapPin className="h-4 w-4 mr-2" />
                                 <span>{sanitizeText(String(investor.location)) || 'N/A'}</span>
-                              </div>
-                            )}
-                          </CardContent>
-                        </Card>
-                      )
-                    })}
+                                  </div>
+                                )}
+                              </CardContent>
+                            </Card>
+                    )
+                  })}
                   </div>
-                </div>
-              </>
-            )}
-          </ScrollArea>
-        </SheetContent>
-      </Sheet>
+              </div>
+            </>
+          )}
+        </ScrollArea>
+      </SheetContent>
+    </Sheet>
 
       {/* Individual Investor Dialog */}
       {selectedInvestor && (

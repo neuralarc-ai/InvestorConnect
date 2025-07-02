@@ -6,6 +6,7 @@ import { ThemeToggle } from "@/components/shared/theme-toggle"
 import { LogOut, Rocket, Search, Plus } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { useState } from "react"
+import { AddInvestorDialog } from "@/components/investors/add-investor-dialog"
 
 interface HeaderProps {
   searchQuery: string
@@ -50,6 +51,7 @@ export function Header({ searchQuery, setSearchQuery }: HeaderProps) {
           </div>
         </div>
       </header>
+      <AddInvestorDialog isOpen={isAddInvestorOpen} onClose={() => setIsAddInvestorOpen(false)} />
     </>
   )
 }

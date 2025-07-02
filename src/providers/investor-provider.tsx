@@ -13,6 +13,7 @@ interface InvestorContextType {
   currentPage: number
   setCurrentPage: React.Dispatch<React.SetStateAction<number>>
   pageSize: number
+  setInvestors: React.Dispatch<React.SetStateAction<Investor[]>>
 }
 
 const InvestorContext = createContext<InvestorContextType | undefined>(undefined)
@@ -38,6 +39,7 @@ export function InvestorProvider({ children }: { children: ReactNode }) {
   const [totalCount, setTotalCount] = useState(0)
   const [currentPage, setCurrentPage] = useState(1)
   const pageSize = PAGE_SIZE
+  const [previewInvestors, setInvestors] = useState<Investor[]>([])
 
   // Get total count from Supabase
   const getTotalCount = async () => {
@@ -86,7 +88,7 @@ export function InvestorProvider({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <InvestorContext.Provider value={{ groupedInvestors, totalGroups, isLoading, progress, totalCount, currentPage, setCurrentPage, pageSize }}>
+    <InvestorContext.Provider value={{ groupedInvestors, totalGroups, isLoading, progress, totalCount, currentPage, setCurrentPage, pageSize, setInvestors }}>
       {children}
     </InvestorContext.Provider>
   )
