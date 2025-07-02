@@ -58,54 +58,63 @@ async function upsertPin(email: string, pin: string): Promise<void> {
 // Send email with PIN
 async function sendEmail(email: string, pin: string): Promise<void> {
   const transporter = createTransporter()
-  const pitchUrl = process.env.PITCH_URL
-
-  if (!pitchUrl) {
-    throw new Error('PITCH_URL environment variable is not set')
-  }
+  const pitchUrl = 'https://pitch.neuralarc.ai'
 
   const mailOptions = {
     from: process.env.SMTP_FROM || process.env.SMTP_USER,
     to: email,
-    subject: 'Your 48-Hour Access PIN to Our Pitch Deck',
+    subject: 'Investment Opportunity in Our Agile AI Solutions Company',
     html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #333;">Access Your Pitch Deck</h2>
-        <p>Hello,</p>
-        <p>You now have 48-hour access to our pitch deck. Please use the following information to access it:</p>
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; line-height: 1.6;">
+        <p style="margin: 0 0 16px 0;">Dear Investor,</p>
         
-        <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <p><strong>Access Link:</strong> <a href="${pitchUrl}" style="color: #007bff;">${pitchUrl}</a></p>
-          <p><strong>Your PIN:</strong> <span style="font-size: 24px; font-weight: bold; color: #28a745; letter-spacing: 4px;">${pin}</span></p>
-        </div>
+        <p style="margin: 0 0 16px 0;">Neural Arc is a generative artificial intelligence company establishing the cognitive infrastructure for enterprises. Our intelligent agent systems integrate natively with existing data, allowing organisations to automate decisions, streamline workflows, and extract actionable insights without costly system replacement.</p>
         
-        <p><strong>Important:</strong></p>
-        <ul>
-          <li>This PIN expires in 48 hours</li>
-          <li>Keep this PIN secure and don't share it</li>
-          <li>If you need a new PIN, please contact us</li>
+        <p style="margin: 0 0 16px 0;"><strong>Key reasons to consider an investment in Neural Arc:</strong></p>
+        <ol style="margin: 0 0 16px 0; padding-left: 20px;">
+          <li style="margin: 0 0 8px 0;"><strong>Strong Market Momentum:</strong> The enterprise artificial intelligence sector is shifting decisively toward agentic automation, and Neural Arc occupies a central position in this movement.</li>
+          <li style="margin: 0 0 8px 0;"><strong>Interoperable Technology:</strong> Our proprietary AI agent framework connects effortlessly across diverse data stacks, ensuring rapid deployment and minimal integration friction.</li>
+          <li style="margin: 0 0 8px 0;"><strong>Scalable Architecture:</strong> The platform supports accelerated product rollout across multiple verticals, enabling compounding growth.</li>
+          <li style="margin: 0 0 8px 0;"><strong>Experienced Leadership:</strong> A founding team with successful exits and deep domain expertise guides strategy, execution, and market penetration.</li>
+        </ol>
+        
+        <p style="margin: 0 0 16px 0;">Neural Arc is not merely developing standalone tools. We are constructing the foundation of enterprise cognition. We are currently raising a seed round and would value the opportunity to discuss how your partnership can accelerate our mission.</p>
+        
+        <p style="margin: 0 0 16px 0;"><strong>Please review our investor presentation and select a convenient time for a brief introductory call:</strong></p>
+        <ul style="margin: 0 0 16px 0; padding-left: 20px;">
+          <li style="margin: 0 0 8px 0;"><strong>Investor Deck:</strong> <a href="${pitchUrl}" style="color: #007bff; text-decoration: none;">${pitchUrl}</a> (PIN: <span style="font-size: 18px; font-weight: bold; color: #28a745; letter-spacing: 2px;">${pin}</span>)</li>
+          <li style="margin: 0 0 8px 0;"><strong>Schedule a Call:</strong> <a href="https://cal.neuralarc.ai/" style="color: #007bff; text-decoration: none;">https://cal.neuralarc.ai/</a></li>
         </ul>
         
-        <p>Best regards,<br>Your Team</p>
+        <p style="margin: 0 0 16px 0;">Thank you for your consideration. I look forward to our conversation.</p>
+        
+        <p style="margin: 16px 0 8px 0;"><strong>Kind regards,</strong></p>
+        <p style="margin: 4px 0; color: #666;">Aniket Tapre</p>
+        <p style="margin: 4px 0; color: #666;">Founder and Chief Executive Officer, Neural Arc</p>
       </div>
     `,
     text: `
-Access Your Pitch Deck
+Dear Investor,
 
-Hello,
+Neural Arc is a generative artificial intelligence company establishing the cognitive infrastructure for enterprises. Our intelligent agent systems integrate natively with existing data, allowing organisations to automate decisions, streamline workflows, and extract actionable insights without costly system replacement.
 
-You now have 48-hour access to our pitch deck. Please use the following information to access it:
+Key reasons to consider an investment in Neural Arc:
+1. Strong Market Momentum: The enterprise artificial intelligence sector is shifting decisively toward agentic automation, and Neural Arc occupies a central position in this movement.
+2. Interoperable Technology: Our proprietary AI agent framework connects effortlessly across diverse data stacks, ensuring rapid deployment and minimal integration friction.
+3. Scalable Architecture: The platform supports accelerated product rollout across multiple verticals, enabling compounding growth.
+4. Experienced Leadership: A founding team with successful exits and deep domain expertise guides strategy, execution, and market penetration.
 
-Access Link: ${pitchUrl}
-Your PIN: ${pin}
+Neural Arc is not merely developing standalone tools. We are constructing the foundation of enterprise cognition. We are currently raising a seed round and would value the opportunity to discuss how your partnership can accelerate our mission.
 
-Important:
-- This PIN expires in 48 hours
-- Keep this PIN secure and don't share it
-- If you need a new PIN, please contact us
+Please review our investor presentation and select a convenient time for a brief introductory call:
+• Investor Deck: https://pitch.neuralarc.ai (PIN: ${pin})
+• Schedule a Call: https://cal.neuralarc.ai/
 
-Best regards,
-Your Team
+Thank you for your consideration. I look forward to our conversation.
+
+Kind regards,
+Aniket Tapre
+Founder and Chief Executive Officer, Neural Arc
     `,
   }
 
