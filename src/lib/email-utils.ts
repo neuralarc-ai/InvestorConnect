@@ -24,7 +24,11 @@ async function upsertPin(email: string, pin: string): Promise<void> {
   const expiresAt = new Date()
   expiresAt.setHours(expiresAt.getHours() + 48) // 48 hours from now
 
-  const { error } = await supabasePitch
+  console.log('Attempting to upsert PIN for email:', email)
+  console.log('Supabase URL:', process.env.NEXT_PUBLIC_PITCH_SUPABASE_URL ? 'Set' : 'Missing')
+  console.log('Service Key:', process.env.PITCH_SUPABASE_SERVICE_ROLE_KEY ? 'Set' : 'Missing')
+
+  const { data, error } = await supabasePitch
     .from('investors_pin')
     .upsert(
       {
@@ -39,8 +43,16 @@ async function upsertPin(email: string, pin: string): Promise<void> {
 
   if (error) {
     console.error('Error upserting PIN:', error)
-    throw new Error(`Failed to save PIN: ${error.message}`)
+    console.error('Error details:', {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code
+    })
+    throw new Error(`Failed to save PIN: ${error.message || 'Unknown database error'}`)
   }
+
+  console.log('PIN upserted successfully:', data)
 }
 
 // Send email with PIN
@@ -108,6 +120,8 @@ Your Team
 // Main function to send investor access email
 export async function sendInvestorAccessEmail(email: string, providedPin?: string): Promise<{ success: boolean; pin?: string; error?: string }> {
   try {
+    console.log('Starting sendInvestorAccessEmail for:', email)
+    
     // Validate email
     if (!email || !email.includes('@')) {
       throw new Error('Invalid email address')
@@ -115,18 +129,24 @@ export async function sendInvestorAccessEmail(email: string, providedPin?: strin
 
     // Use provided PIN or generate new one
     const pin = providedPin || generatePin()
+    console.log('Using PIN:', pin)
 
     // Save PIN to Supabase
+    console.log('Attempting to save PIN to database...')
     await upsertPin(email, pin)
+    console.log('PIN saved successfully')
 
     // Only send email if no PIN was provided (standalone access email flow)
     if (!providedPin) {
+      console.log('Sending email...')
       await sendEmail(email, pin)
+      console.log('Email sent successfully')
     }
 
     return { success: true, pin }
   } catch (error) {
     console.error('Error in sendInvestorAccessEmail:', error)
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Unknown error occurred' 

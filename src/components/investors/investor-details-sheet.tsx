@@ -265,17 +265,18 @@ export function InvestorDetailsSheet({ investors: investorGroup, isOpen, onClose
       const pitchUrl = process.env.NEXT_PUBLIC_PITCH_URL || 'https://your-pitch-deck-url.com';
       const pitchAccessSection = `
 
----
-Pitch Deck Access
+<hr style="margin: 30px 0; border: none; border-top: 1px solid #e0e0e0;">
+<h3 style="color: #333; margin-bottom: 15px;">Pitch Deck Access</h3>
+<p>I've also attached access to our detailed pitch deck for your review:</p>
 
-I've also attached access to our detailed pitch deck for your review:
+<div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #007bff;">
+  <p style="margin: 5px 0;"><strong>Access Link:</strong> <a href="${pitchUrl}" style="color: #007bff; text-decoration: none;">${pitchUrl}</a></p>
+  <p style="margin: 5px 0;"><strong>Your PIN:</strong> <span style="font-size: 18px; font-weight: bold; color: #28a745; letter-spacing: 2px;">${pin}</span></p>
+</div>
 
-Access Link: ${pitchUrl}
-Your PIN: ${pin}
+<p style="color: #666; font-size: 14px;"><strong>Important:</strong> This PIN will expire in 48 hours for security purposes. Please let me know if you need any additional information or have questions about our pitch.</p>
 
-This PIN will expire in 48 hours for security purposes. Please let me know if you need any additional information or have questions about our pitch.
-
----
+<hr style="margin: 30px 0; border: none; border-top: 1px solid #e0e0e0;">
 `;
       
       const emailWithPitchAccess = result.emailContent + pitchAccessSection;
@@ -327,22 +328,52 @@ This PIN will expire in 48 hours for security purposes. Please let me know if yo
       }
     }
 
-    // Create mailto link for actual email sending
-    const body = encodeURIComponent(emailContent);
-    const mailtoLink = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${body}`;
-    
+    // Send email directly using our API
     try {
-      window.open(mailtoLink, '_blank');
-      toast({ 
-        title: "Email Client Opened", 
-        description: `Email client opened for ${sanitizeText(investor.Contact_Person)}${pin ? ` with PIN: ${pin}` : ''}` 
+      console.log('Frontend: Sending email request...')
+      console.log('Frontend: To:', to)
+      console.log('Frontend: Subject:', subject)
+      console.log('Frontend: Content length:', emailContent.length)
+      
+      const response = await fetch('/api/send-investor-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          to: to,
+          subject: subject,
+          content: emailContent,
+          pin: pin
+        }),
       });
+
+      console.log('Frontend: Response status:', response.status)
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Frontend: Response error:', errorText)
+        throw new Error(`HTTP ${response.status}: ${errorText}`)
+      }
+
+      const result = await response.json();
+      console.log('Frontend: Response result:', result)
+      
+      if (result.success) {
+        toast({ 
+          title: "Email Sent Successfully", 
+          description: `Email sent to ${sanitizeText(investor.Contact_Person)}${pin ? ` with PIN: ${pin}` : ''}` 
+        });
+      } else {
+        throw new Error(result.error || result.details || 'Failed to send email');
+      }
     } catch (error) {
-      console.error("Failed to open email client:", error);
+      console.error("Frontend: Failed to send email:", error);
+      console.error("Frontend: Error details:", error instanceof Error ? error.stack : 'No stack trace');
       toast({ 
         variant: "destructive", 
         title: "Email Error", 
-        description: "Could not open email client. Please check your email settings." 
+        description: error instanceof Error ? error.message : "Could not send email. Please try again." 
       });
     }
   }
