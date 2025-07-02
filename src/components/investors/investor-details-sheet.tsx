@@ -310,22 +310,28 @@ export function InvestorDetailsSheet({ investors: investorGroup, isOpen, onClose
     }
 
     // If there's a PIN, save it to Supabase first
-    if (pin) {
+    if (investor.email && pin) {
+      const expires_at = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(); // 48 hours from now
       try {
-        const response = await fetch('/api/send-access-email', {
+        const response = await fetch('/api/store-pin', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ email: to, pin }),
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: investor.email, pin, expires_at })
         });
-
         const result = await response.json();
-        if (!result.success) {
-          console.warn('Failed to save PIN to database:', result.error);
+        if (result.error) {
+          toast({
+            variant: "destructive",
+            title: "Failed to store PIN",
+            description: result.error || "Could not save PIN to pitch database."
+          });
         }
       } catch (error) {
-        console.warn('Failed to save PIN to database:', error);
+        toast({
+          variant: "destructive",
+          title: "Failed to store PIN",
+          description: (error as Error).message || "Could not save PIN to pitch database."
+        });
       }
     }
 

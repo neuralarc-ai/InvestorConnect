@@ -8,6 +8,7 @@ import { InvestorDetailsSheet } from "@/components/investors/investor-details-sh
 import { Header } from "@/components/shared/header"
 import type { Investor } from "@/lib/types"
 import { Button } from "@/components/ui/button"
+import { supabase } from "@/lib/supabaseClient"
 
 // Cleaner function to sanitize text for byte-sensitive areas
 function sanitizeText(input: string | undefined) {
@@ -45,8 +46,70 @@ export function InvestorDashboard() {
   const [selectedInvestorGroup, setSelectedInvestorGroup] = useState<Investor[] | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
 
-  const totalPages = Math.ceil(totalGroups / pageSize)
-  const paginatedGroups = groupedInvestors.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+  // Filter groups by search query (matches investor_name or contact_person)
+  const filteredGroups = useMemo(() => {
+    if (!searchQuery.trim()) return groupedInvestors;
+    const q = searchQuery.toLowerCase();
+    return groupedInvestors.filter(group => {
+      const primary = group[0];
+      return (
+        (primary.investor_name && primary.investor_name.toLowerCase().includes(q)) ||
+        (primary.contact_person && primary.contact_person.toLowerCase().includes(q))
+      );
+    });
+  }, [groupedInvestors, searchQuery]);
+
+  const totalPages = Math.ceil(filteredGroups.length / pageSize)
+  const paginatedGroups = filteredGroups.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+
+  // --- DUMMY DATA SECTION ---
+  const [dummyInvestors, setDummyInvestors] = useState<any[]>([]);
+  const [isDummyLoading, setIsDummyLoading] = useState(true);
+  const [dummyPage, setDummyPage] = useState(1);
+  const dummyPageSize = 20;
+
+  useEffect(() => {
+    async function fetchDummy() {
+      setIsDummyLoading(true);
+      try {
+        const { data } = await supabase
+          .from('investorsdummy')
+          .select('*')
+          .order('created_at', { ascending: false });
+        setDummyInvestors(data || []);
+      } finally {
+        setIsDummyLoading(false);
+      }
+    }
+    fetchDummy();
+  }, []);
+
+  // Group dummy investors by investor_name
+  const groupedDummyInvestors = useMemo(() => {
+    const map = new Map();
+    dummyInvestors.forEach(inv => {
+      const key = (inv.investor_name || '').trim().toLowerCase();
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(inv);
+    });
+    return Array.from(map.values());
+  }, [dummyInvestors]);
+
+  // Search and paginate dummy investors
+  const filteredDummyGroups = useMemo(() => {
+    if (!searchQuery.trim()) return groupedDummyInvestors;
+    const q = searchQuery.toLowerCase();
+    return groupedDummyInvestors.filter(group => {
+      const primary = group[0];
+      return (
+        (primary.investor_name && primary.investor_name.toLowerCase().includes(q)) ||
+        (primary.contact_person && primary.contact_person.toLowerCase().includes(q))
+      );
+    });
+  }, [groupedDummyInvestors, searchQuery]);
+
+  const dummyTotalPages = Math.ceil(filteredDummyGroups.length / dummyPageSize);
+  const paginatedDummyGroups = filteredDummyGroups.slice((dummyPage - 1) * dummyPageSize, dummyPage * dummyPageSize);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -63,7 +126,7 @@ export function InvestorDashboard() {
             </div>
             <p className="text-sm mt-1">{progress}% complete</p>
           </div>
-        ) : groupedInvestors.length > 0 ? (
+        ) : paginatedGroups.length > 0 ? (
           <div className="w-full">
             <div className="flex flex-wrap justify-center gap-6">
               {paginatedGroups.map((group, index) => (
@@ -97,6 +160,45 @@ export function InvestorDashboard() {
             <CsvUploader />
           </div>
         )}
+
+        {/* --- DUMMY DATA SECTION --- */}
+        <div className="mt-16">
+          <h2 className="text-2xl font-bold mb-4">Investors (Dummy Table)</h2>
+          {isDummyLoading ? (
+            <div className="w-full flex flex-col justify-center items-center">
+              <p className="mb-2 text-lg font-medium">Loading dummy investors…</p>
+            </div>
+          ) : paginatedDummyGroups.length > 0 ? (
+            <div className="w-full">
+              <div className="flex flex-wrap justify-center gap-6">
+                {paginatedDummyGroups.map((group, index) => (
+                  <InvestorCard
+                    key={`dummy-${group[0]?.investor_name?.toLowerCase().trim() || 'unknown'}-${index}`}
+                    investors={group}
+                    onSelect={() => setSelectedInvestorGroup(group)}
+                  />
+                ))}
+              </div>
+              {dummyTotalPages > 1 && (
+                <div className="flex justify-center items-center space-x-4 mt-8">
+                  <Button onClick={() => setDummyPage((prev) => Math.max(prev - 1, 1))} disabled={dummyPage === 1} variant="outline">
+                    Previous
+                  </Button>
+                  <span className="text-sm font-medium">
+                    Page {dummyPage} of {dummyTotalPages}
+                  </span>
+                  <Button onClick={() => setDummyPage((prev) => Math.min(prev + 1, dummyTotalPages))} disabled={dummyPage === dummyTotalPages} variant="outline">
+                    Next
+                  </Button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="w-full text-center mx-auto mt-8">
+              <p className="text-muted-foreground">No dummy investors found.</p>
+            </div>
+          )}
+        </div>
       </main>
       <InvestorDetailsSheet
         investors={selectedInvestorGroup}

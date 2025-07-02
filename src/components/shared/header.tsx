@@ -7,7 +7,6 @@ import { LogOut, Rocket, Search, Plus } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { AddInvestorDialog } from "@/components/investors/add-investor-dialog"
 import { useState } from "react"
-import { AddInvestorDialog } from "@/components/investors/add-investor-dialog"
 
 interface HeaderProps {
   searchQuery: string

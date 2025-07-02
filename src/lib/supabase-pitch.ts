@@ -23,4 +23,20 @@ export interface InvestorPin {
   expires_at: string
   created_at?: string
   updated_at?: string
+}
+
+export async function storeInvestorPin({
+  email,
+  pin,
+  expires_at
+}: {
+  email: string,
+  pin: string,
+  expires_at: string // ISO string or Date
+}) {
+  const { data, error } = await supabasePitch
+    .from('investor_pins')
+    .insert([{ email, pin, expires_at }])
+    .select();
+  return { data, error };
 } 

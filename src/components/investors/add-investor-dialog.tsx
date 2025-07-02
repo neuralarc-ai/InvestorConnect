@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { User, Building2, Mail, Linkedin, Twitter, Facebook } from "lucide-react"
 import type { Investor } from "@/lib/types"
+import { supabase } from "@/lib/supabaseClient"
 
 interface AddInvestorDialogProps {
   isOpen: boolean
@@ -18,7 +19,7 @@ interface AddInvestorDialogProps {
 }
 
 export function AddInvestorDialog({ isOpen, onClose }: AddInvestorDialogProps) {
-  const { investors, setInvestors } = useInvestors()
+  const { setInvestors } = useInvestors()
   const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -54,6 +55,26 @@ export function AddInvestorDialog({ isOpen, onClose }: AddInvestorDialogProps) {
     }))
   }
 
+  async function addInvestorDummy(fields: {
+    investor_name: string,
+    contact_person: string,
+    designation?: string,
+    country?: string,
+    email?: string,
+    phone?: string,
+    website?: string,
+    personal_linkedin?: string,
+    company_linkedin?: string,
+    twitter?: string,
+    facebook?: string
+  }) {
+    const { data, error } = await supabase
+      .from('investorsdummy')
+      .insert([fields])
+      .select();
+    return { data, error };
+  }
+
   const handleSubmit = async () => {
     if (!formData.investor_name.trim() || !formData.contact_person.trim()) {
       toast({
@@ -67,28 +88,46 @@ export function AddInvestorDialog({ isOpen, onClose }: AddInvestorDialogProps) {
     setIsSubmitting(true)
 
     try {
-      const newInvestor: Investor = {
+      const newInvestor = {
         investor_name: formData.investor_name.trim(),
         contact_person: formData.contact_person.trim(),
         designation: formData.designation.trim() || undefined,
+        country: formData.country.trim() || undefined,
         email: formData.email.trim() || undefined,
         phone: formData.phone.trim() || undefined,
         website: formData.website.trim() || undefined,
-        linkedin: formData.linkedin.trim() || undefined,
+        personal_linkedin: formData.linkedin.trim() || undefined,
         company_linkedin: formData.company_linkedin.trim() || undefined,
         twitter: formData.twitter.trim() || undefined,
-        facebook: formData.facebook.trim() || undefined,
-        country: formData.country.trim() || undefined
-      }
+        facebook: formData.facebook.trim() || undefined
+      };
 
-      const updatedInvestors = [...(Array.isArray(investors) ? investors : []), newInvestor];
-      setInvestors(updatedInvestors);
-      sessionStorage.setItem("investors", JSON.stringify(updatedInvestors));
+      const { error, data } = await addInvestorDummy(newInvestor);
+
+      if (error) {
+        console.error('Supabase insert error:', error);
+        toast({
+          variant: "destructive",
+          title: "Supabase Error",
+          description: error.message || 'Failed to save to database.'
+        });
+        setIsSubmitting(false);
+        return;
+      }
+      if (!data) {
+        toast({
+          variant: "destructive",
+          title: "No Data Returned",
+          description: "No data was returned from Supabase. Check your table and permissions."
+        });
+        setIsSubmitting(false);
+        return;
+      }
 
       toast({
         title: "Investor Added Successfully",
         description: `${newInvestor.investor_name} has been added to your investor list.`
-      })
+      });
 
       setFormData({
         investor_name: "",
@@ -102,8 +141,8 @@ export function AddInvestorDialog({ isOpen, onClose }: AddInvestorDialogProps) {
         twitter: "",
         facebook: "",
         country: ""
-      })
-      onClose()
+      });
+      onClose();
     } catch (error) {
       console.error("Error adding investor:", error)
       toast({
