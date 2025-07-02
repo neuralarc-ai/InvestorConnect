@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer'
-import { supabasePitch, type InvestorPin } from './supabase-pitch'
+import { pitchSupabase } from './pitch-supabase-client'
 
 // Generate a random 4-digit PIN
 function generatePin(): string {
@@ -28,7 +28,7 @@ async function upsertPin(email: string, pin: string): Promise<void> {
   console.log('Supabase URL:', process.env.NEXT_PUBLIC_PITCH_SUPABASE_URL ? 'Set' : 'Missing')
   console.log('Service Key:', process.env.PITCH_SUPABASE_SERVICE_ROLE_KEY ? 'Set' : 'Missing')
 
-  const { data, error } = await supabasePitch
+  const { data, error } = await pitchSupabase
     .from('investors_pin')
     .upsert(
       {
@@ -156,7 +156,7 @@ export async function sendInvestorAccessEmail(email: string, providedPin?: strin
 
 // Utility function to check if PIN exists and is valid
 export async function checkPinValidity(email: string, pin: string): Promise<boolean> {
-  const { data, error } = await supabasePitch
+  const { data, error } = await pitchSupabase
     .from('investors_pin')
     .select('*')
     .eq('email', email)
