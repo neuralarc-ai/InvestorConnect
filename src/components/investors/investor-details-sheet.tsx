@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Wand2, Mail, Copy, Loader2, Send, Briefcase, Globe, Phone, User, MapPin, TrendingUp, Info } from "lucide-react"
 
 interface InvestorDetailsSheetProps {
@@ -19,14 +19,35 @@ interface InvestorDetailsSheetProps {
   onClose: () => void
 }
 
+// Cleaner function to sanitize text for byte-sensitive areas
+function sanitizeText(input: string | undefined) {
+  if (!input) return '';
+  try {
+    // More aggressive sanitization
+    let sanitized = input.normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
+    sanitized = sanitized.replace(/[^\x00-\x7F]/g, '');
+    sanitized = sanitized.replace(/[\x00-\x1F\x7F]/g, '');
+    return sanitized;
+  } catch (error) {
+    console.warn('Text sanitization error:', error);
+    return input.replace(/[^\x00-\x7F]/g, '');
+  }
+}
+
+// Generate a random 4-digit PIN
+function generatePin(): string {
+  return Math.floor(1000 + Math.random() * 9000).toString()
+}
+
 function DetailItem({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value?: string }) {
   if (!value) return null;
+  const safeValue = sanitizeText(value as string);
   return (
     <div className="flex items-start">
       <Icon className="h-4 w-4 mr-3 mt-1 text-muted-foreground flex-shrink-0" />
       <div>
         <p className="font-semibold">{label}</p>
-        <p className="text-sm text-muted-foreground break-words">{value}</p>
+        <p className="text-sm text-muted-foreground break-words">{safeValue || 'N/A'}</p>
       </div>
     </div>
   )
@@ -34,14 +55,15 @@ function DetailItem({ icon: Icon, label, value }: { icon: React.ElementType, lab
 
 function DetailLinkItem({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value?: string }) {
     if (!value) return null;
-    const href = value.startsWith('http') ? value : `https://${value}`;
+    const safeValue = sanitizeText(value as string);
+    const href = safeValue.startsWith('http') ? safeValue : `https://${safeValue}`;
     return (
       <div className="flex items-start">
         <Icon className="h-4 w-4 mr-3 mt-1 text-muted-foreground flex-shrink-0" />
         <div>
           <p className="font-semibold">{label}</p>
           <a href={href} target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-2 break-all">
-            {value}
+            {safeValue || 'N/A'}
           </a>
         </div>
       </div>
@@ -51,10 +73,140 @@ function DetailLinkItem({ icon: Icon, label, value }: { icon: React.ElementType,
 type EmailState = {
   isLoading: boolean;
   content: string;
+  pin?: string;
+}
+
+// Individual Investor Dialog Component
+function InvestorDialog({ 
+  investor, 
+  isOpen, 
+  onClose, 
+  emailState, 
+  onGenerateEmail, 
+  onSendEmail, 
+  onCopyToClipboard, 
+  onTextChange 
+}: {
+  investor: Investor;
+  isOpen: boolean;
+  onClose: () => void;
+  emailState: EmailState;
+  onGenerateEmail: (investor: Investor) => void;
+  onSendEmail: (investor: Investor, content: string, pin?: string) => void;
+  onCopyToClipboard: (content: string) => void;
+  onTextChange: (contactId: string, value: string) => void;
+}) {
+  const contactId = sanitizeText(String(investor.contact_person)) || String(investor.email) || String(investor.id) || `contact-fallback`;
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-headline">
+            {sanitizeText(String(investor.contact_person))}
+          </DialogTitle>
+        </DialogHeader>
+        
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg font-headline">Contact Information</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <DetailItem icon={Mail} label="Email" value={String(investor.email) || 'N/A'} />
+              <DetailItem icon={Phone} label="Phone" value={String(investor.phone) || 'N/A'} />
+              <DetailLinkItem icon={User} label="LinkedIn" value={String(investor.linkedin) || 'N/A'} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg font-headline">Generate & Compose Email with Pitch Access</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <p className="text-sm text-blue-800">
+                  <strong>Note:</strong> When you generate an email, it will automatically include:
+                </p>
+                <ul className="text-sm text-blue-700 mt-2 list-disc list-inside">
+                  <li>A personalized outreach message</li>
+                  <li>Pitch deck access link and PIN</li>
+                  <li>48-hour PIN expiry information</li>
+                </ul>
+              </div>
+              
+              <Button 
+                onClick={() => onGenerateEmail(investor)} 
+                disabled={emailState.isLoading}
+                className="w-full sm:w-auto"
+              >
+                {emailState.isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Wand2 className="mr-2 h-4 w-4" />
+                    Generate Email with Pitch Access for {sanitizeText(String(investor.contact_person))}
+                  </>
+                )}
+              </Button>
+              
+              {emailState.content && (
+                <div className="space-y-4 pt-4">
+                  {emailState.pin && (
+                    <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+                      <p className="text-sm text-green-800">
+                        <strong>Generated PIN:</strong> <span className="font-mono text-lg font-bold">{emailState.pin}</span>
+                      </p>
+                      <p className="text-xs text-green-600 mt-1">
+                        This PIN will be saved to the database when you send the email.
+                      </p>
+                    </div>
+                  )}
+                  
+                  <Textarea
+                    value={emailState.content}
+                    onChange={(e) => onTextChange(String(contactId), e.target.value)}
+                    rows={15}
+                    className="text-sm"
+                    placeholder="Generated email content will appear here..."
+                  />
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={() => onSendEmail(investor, emailState.content, emailState.pin)}
+                      disabled={!String(investor.email)}
+                    >
+                      <Send className="mr-2 h-4 w-4" />
+                      Send Email
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => onCopyToClipboard(emailState.content)}
+                    >
+                      <Copy className="mr-2 h-4 w-4" />
+                      Copy
+                    </Button>
+                  </div>
+                  {!String(investor.email) && (
+                    <p className="text-sm text-muted-foreground">
+                      No email address available for this contact.
+                    </p>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 export function InvestorDetailsSheet({ investors: investorGroup, isOpen, onClose }: InvestorDetailsSheetProps) {
   const [emailStates, setEmailStates] = useState<Map<string, EmailState>>(new Map())
+  const [selectedInvestor, setSelectedInvestor] = useState<Investor | null>(null)
   const { toast } = useToast()
 
   const primaryInvestor = investorGroup?.[0];
@@ -70,12 +222,12 @@ export function InvestorDetailsSheet({ investors: investorGroup, isOpen, onClose
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          investor_name: primaryInvestor.investor_name,
-          location: primaryInvestor.location,
-          investor_type: primaryInvestor.investor_type,
-          investment_score: primaryInvestor.investment_score,
-          practice_areas: primaryInvestor.practice_areas,
-          overview: primaryInvestor.overview,
+          investor_name: String(primaryInvestor.investor_name),
+          location: String(primaryInvestor.location),
+          investor_type: String(primaryInvestor.investor_type),
+          investment_score: String(primaryInvestor.investment_score),
+          practice_areas: String(primaryInvestor.practice_areas),
+          overview: String(primaryInvestor.overview),
         }),
       })
         .then(res => res.json())
@@ -90,6 +242,7 @@ export function InvestorDetailsSheet({ investors: investorGroup, isOpen, onClose
   useEffect(() => {
     if (isOpen) {
       setEmailStates(new Map())
+      setSelectedInvestor(null)
     }
   }, [isOpen, investorGroup])
 
@@ -102,32 +255,156 @@ export function InvestorDetailsSheet({ investors: investorGroup, isOpen, onClose
     })
   }
 
-  const handleGenerateEmail = async (investor: Investor) => {
-    const contactId = investor.contact_person;
+  const handleGenerateEmail = async (investor: Investor, contactId: string) => {
     updateEmailState(contactId, { isLoading: true, content: '' })
 
     try {
+      // Generate PIN first
+      const pin = generatePin();
+      
       const input: GeneratePersonalizedEmailInput = {
-        Contact_Person: investor.contact_person,
-        Designation: investor.designation || 'a leader',
-        Investor_Name: investor.investor_name,
-        Location: investor.location || 'their region',
+        Contact_Person: sanitizeText(String(investor.contact_person)),
+        Designation: sanitizeText(String(investor.designation)) || 'a leader',
+        Investor_Name: sanitizeText(String(investor.investor_name)),
+        Location: sanitizeText(String(investor.location)) || 'their region',
         ourCompanyName: "Our Awesome Startup",
         pitchSummary: "We are building a revolutionary platform to change the world."
       }
+      
+      // Additional safety check before sending to AI
+      Object.keys(input).forEach(key => {
+        const value = input[key as keyof GeneratePersonalizedEmailInput];
+        if (typeof value === 'string' && value.length > 0) {
+          // Check for any characters with code > 255
+          for (let i = 0; i < value.length; i++) {
+            const charCode = value.charCodeAt(i);
+            if (charCode > 255) {
+              console.warn(`Found problematic character at index ${i} in ${key}: ${charCode}`);
+              // Re-sanitize this field
+              input[key as keyof GeneratePersonalizedEmailInput] = sanitizeText(value);
+              break;
+            }
+          }
+        }
+      });
+      
       const result = await generatePersonalizedEmail(input)
-      updateEmailState(contactId, { content: result.emailContent })
-      toast({ title: "Email Generated", description: `Personalized email for ${contactId} is ready.` })
+      
+      // Add pitch deck access information to the generated email
+      const pitchUrl = process.env.NEXT_PUBLIC_PITCH_URL || 'https://your-pitch-deck-url.com';
+      const pitchAccessSection = `
+
+<hr style="margin: 30px 0; border: none; border-top: 1px solid #e0e0e0;">
+<h3 style="color: #333; margin-bottom: 15px;">Pitch Deck Access</h3>
+<p>I've also attached access to our detailed pitch deck for your review:</p>
+
+<div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #007bff;">
+  <p style="margin: 5px 0;"><strong>Access Link:</strong> <a href="${pitchUrl}" style="color: #007bff; text-decoration: none;">${pitchUrl}</a></p>
+  <p style="margin: 5px 0;"><strong>Your PIN:</strong> <span style="font-size: 18px; font-weight: bold; color: #28a745; letter-spacing: 2px;">${pin}</span></p>
+</div>
+
+<p style="color: #666; font-size: 14px;"><strong>Important:</strong> This PIN will expire in 48 hours for security purposes. Please let me know if you need any additional information or have questions about our pitch.</p>
+
+<hr style="margin: 30px 0; border: none; border-top: 1px solid #e0e0e0;">
+`;
+      
+      const emailWithPitchAccess = result.emailContent + pitchAccessSection;
+
+
+      
+      updateEmailState(contactId, { content: emailWithPitchAccess, pin })
+      
+      toast({ title: "Email Generated", description: `Personalized email for ${contactId} is ready with PIN: ${pin}` })
     } catch (error) {
       console.error("Failed to generate email:", error)
       toast({ variant: "destructive", title: "Generation Failed", description: "Could not generate the email." })
     } finally {
       updateEmailState(contactId, { isLoading: false })
+
     }
   }
 
-  const handleSendEmail = (email?: string) => {
-    toast({ title: "Email Sent (Mock)", description: `Email to ${email} has been logged.` })
+  const handleSendEmail = async (investor: Investor, emailContent: string, pin?: string) => {
+    const subject = `Outreach from ${sanitizeText(String(investor.investor_name))}`;
+    const to = sanitizeText(String(investor.email)) || String(investor.email) || String(investor.id) || `contact-fallback`;
+    
+    if (!to) {
+      toast({ 
+        variant: "destructive", 
+        title: "No Email Address", 
+        description: "This contact doesn't have an email address." 
+      });
+      return;
+    }
+
+    // If there's a PIN, save it to Supabase first
+    if (pin) {
+      try {
+        const response = await fetch('/api/send-access-email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email: to, pin }),
+        });
+
+        const result = await response.json();
+        if (!result.success) {
+          console.warn('Failed to save PIN to database:', result.error);
+        }
+      } catch (error) {
+        console.warn('Failed to save PIN to database:', error);
+      }
+    }
+
+    // Send email directly using our API
+    try {
+      console.log('Frontend: Sending email request...')
+      console.log('Frontend: To:', to)
+      console.log('Frontend: Subject:', subject)
+      console.log('Frontend: Content length:', emailContent.length)
+      
+      const response = await fetch('/api/send-investor-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          to: to,
+          subject: subject,
+          content: emailContent,
+          pin: pin
+        }),
+      });
+
+      console.log('Frontend: Response status:', response.status)
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Frontend: Response error:', errorText)
+        throw new Error(`HTTP ${response.status}: ${errorText}`)
+      }
+
+      const result = await response.json();
+      console.log('Frontend: Response result:', result)
+      
+      if (result.success) {
+        toast({ 
+          title: "Email Sent Successfully", 
+          description: `Email sent to ${sanitizeText(String(investor.contact_person))}${pin ? ` with PIN: ${pin}` : ''}` 
+        });
+      } else {
+        throw new Error(result.error || result.details || 'Failed to send email');
+      }
+    } catch (error) {
+      console.error("Frontend: Failed to send email:", error);
+      console.error("Frontend: Error details:", error instanceof Error ? error.stack : 'No stack trace');
+      toast({ 
+        variant: "destructive", 
+        title: "Email Error", 
+        description: error instanceof Error ? error.message : "Could not send email. Please try again." 
+      });
+    }
   }
 
   const handleCopyToClipboard = (content: string) => {
@@ -139,100 +416,106 @@ export function InvestorDetailsSheet({ investors: investorGroup, isOpen, onClose
     updateEmailState(contactId, { content: value });
   }
 
-  return (
-    <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent className="w-full sm:max-w-4xl p-0">
-        <ScrollArea className="h-full">
-          {primaryInvestor && investorGroup && (
-            <>
-              <SheetHeader className="p-6">
-                <SheetTitle className="font-headline text-2xl">{primaryInvestor.investor_name}</SheetTitle>
-                <SheetDescription>{investorGroup.length} contact{investorGroup.length > 1 ? 's' : ''} found at this firm.</SheetDescription>
-              </SheetHeader>
-              <Separator />
-              <div className="p-6">
-                <Accordion type="single" collapsible className="w-full" defaultValue={investorGroup[0].contact_person}>
-                  {investorGroup.map((investor) => {
-                    const contactId = investor.contact_person;
-                    const emailState = emailStates.get(contactId) || { isLoading: false, content: '' };
-                    
-                    return (
-                      <AccordionItem value={contactId} key={contactId}>
-                        <AccordionTrigger>
-                          <div className="flex-1 text-left">
-                            <p className="font-semibold text-lg">{investor.contact_person}</p>
-                            <p className="text-sm text-muted-foreground font-normal">{investor.designation}</p>
-                          </div>
-                        </AccordionTrigger>
-                        <AccordionContent>
-                          <div className="space-y-6 pt-4">
-                            <Card>
-                                <CardHeader><CardTitle className="text-lg font-headline">Contact Information</CardTitle></CardHeader>
-                                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <DetailItem icon={Mail} label="Email" value={investor.email} />
-                                    <DetailItem icon={Phone} label="Phone" value={investor.phone} />
-                                    <DetailLinkItem icon={User} label="LinkedIn" value={investor.linkedin} />
-                                    <DetailLinkItem icon={Globe} label="Website" value={investor.website} />
-                                </CardContent>
-                            </Card>
+  const handleCardClick = (investor: Investor) => {
+    setSelectedInvestor(investor);
+  };
 
-                            <Card>
-                                <CardHeader><CardTitle className="text-lg font-headline">Firm Details</CardTitle></CardHeader>
-                                <CardContent className="space-y-6">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                      <DetailItem icon={MapPin} label="Location" value={investor.location} />
-                                      <DetailItem icon={Briefcase} label="Investor Type" value={investor.investor_type} />
-                                      <DetailItem icon={TrendingUp} label="Investment Score" value={investor.investment_score} />
-                                      <DetailItem icon={Info} label="Practice Areas" value={investor.practice_areas} />
-                                    </div>
-                                    <Separator />
-                                    <DetailItem icon={Info} label="Overview" value={investor.overview} />
-                                    {/* Gemini AI-generated summary */}
-                                    {firmDetailsLoading ? (
-                                      <div className="text-muted-foreground">Loading AI summary…</div>
-                                    ) : firmDetails ? (
-                                      <div className="text-sm text-muted-foreground whitespace-pre-line border-t pt-4 mt-4">{firmDetails}</div>
-                                    ) : null}
-                                </CardContent>
-                            </Card>
-            
-                            <Card>
-                              <CardHeader>
-                                <CardTitle className="text-lg font-headline">Generate Email</CardTitle>
-                              </CardHeader>
-                              <CardContent className="space-y-4">
-                                <Button onClick={() => handleGenerateEmail(investor)} disabled={emailState.isLoading}>
-                                  {emailState.isLoading ? <Loader2 className="animate-spin" /> : <Wand2 />}
-                                  Generate for {investor.contact_person}
-                                </Button>
-                                
-                                {emailState.content && (
-                                  <div className="space-y-4 pt-4">
-                                    <Textarea
-                                      value={emailState.content}
-                                      onChange={(e) => handleTextChange(contactId, e.target.value)}
-                                      rows={15}
-                                      className="text-sm"
-                                    />
-                                    <div className="flex gap-2">
-                                      <Button onClick={() => handleSendEmail(investor.email)}><Send/>Send Email (Mock)</Button>
-                                      <Button variant="outline" onClick={() => handleCopyToClipboard(emailState.content)}><Copy/>Copy</Button>
-                                    </div>
-                                  </div>
-                                )}
-                              </CardContent>
-                            </Card>
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    )
-                  })}
-                </Accordion>
-              </div>
-            </>
-          )}
-        </ScrollArea>
-      </SheetContent>
-    </Sheet>
+  const handleDialogClose = () => {
+    setSelectedInvestor(null);
+  };
+
+  return (
+    <>
+      <Sheet open={isOpen} onOpenChange={onClose}>
+        <SheetContent className="w-full sm:max-w-4xl p-0">
+          <ScrollArea className="h-full">
+            {primaryInvestor && investorGroup && (
+              <>
+                <SheetHeader className="p-6">
+                  <SheetTitle className="font-headline text-2xl">{sanitizeText(String(primaryInvestor.investor_name))}</SheetTitle>
+                  <SheetDescription>{investorGroup.length} contact{investorGroup.length > 1 ? 's' : ''} found at this firm.</SheetDescription>
+                </SheetHeader>
+                <Separator />
+                <div className="p-6">
+                  <Card className="mb-6">
+                    <CardHeader><CardTitle className="text-lg font-headline">Company Details</CardTitle></CardHeader>
+                    <CardContent className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <DetailItem icon={MapPin} label="Location" value={primaryInvestor.location || 'N/A'} />
+                        <DetailItem icon={Briefcase} label="Investor Type" value={primaryInvestor.investor_type || 'N/A'} />
+                        <DetailItem icon={TrendingUp} label="Investment Score" value={primaryInvestor.investment_score || 'N/A'} />
+                        <DetailItem icon={Info} label="Practice Areas" value={primaryInvestor.practice_areas || 'N/A'} />
+                      </div>
+                      <Separator />
+                      <DetailItem icon={Info} label="Overview" value={primaryInvestor.overview || 'N/A'} />
+                    </CardContent>
+                  </Card>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {investorGroup.map((investor) => {
+                      const cardKey = investor.id ? String(investor.id) : `contact-${sanitizeText(String(investor.contact_person))}`;
+                      const contactId = sanitizeText(String(investor.contact_person)) || String(investor.email) || cardKey;
+                      
+                      return (
+                        <Card 
+                          key={cardKey}
+                          className="cursor-pointer hover:shadow-md transition-shadow"
+                          onClick={() => handleCardClick(investor)}
+                        >
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-lg font-headline">
+                              {sanitizeText(String(investor.contact_person))}
+                            </CardTitle>
+                            {investor.designation && (
+                              <p className="text-sm text-muted-foreground">
+                                {sanitizeText(String(investor.designation))}
+                              </p>
+                            )}
+                          </CardHeader>
+                          <CardContent className="space-y-3">
+                            {investor.email && (
+                              <div className="flex items-center text-sm text-muted-foreground">
+                                <Mail className="h-4 w-4 mr-2" />
+                                <span className="truncate">{sanitizeText(String(investor.email)) || 'N/A'}</span>
+                              </div>
+                            )}
+                            {investor.phone && (
+                              <div className="flex items-center text-sm text-muted-foreground">
+                                <Phone className="h-4 w-4 mr-2" />
+                                <span>{sanitizeText(String(investor.phone)) || 'N/A'}</span>
+                              </div>
+                            )}
+                            {investor.location && (
+                              <div className="flex items-center text-sm text-muted-foreground">
+                                <MapPin className="h-4 w-4 mr-2" />
+                                <span>{sanitizeText(String(investor.location)) || 'N/A'}</span>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      )
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
+          </ScrollArea>
+        </SheetContent>
+      </Sheet>
+
+      {/* Individual Investor Dialog */}
+      {selectedInvestor && (
+        <InvestorDialog
+          investor={selectedInvestor}
+          isOpen={!!selectedInvestor}
+          onClose={handleDialogClose}
+          emailState={emailStates.get(sanitizeText(String(selectedInvestor.contact_person))) || { isLoading: false, content: '' }}
+          onGenerateEmail={(inv) => handleGenerateEmail(inv, sanitizeText(String(inv.contact_person)) || String(inv.email) || String(inv.id) || 'contact-fallback')}
+          onSendEmail={handleSendEmail}
+          onCopyToClipboard={handleCopyToClipboard}
+          onTextChange={handleTextChange}
+        />
+      )}
+    </>
   )
 }

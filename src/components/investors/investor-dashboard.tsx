@@ -9,6 +9,35 @@ import { Header } from "@/components/shared/header"
 import type { Investor } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 
+// Cleaner function to sanitize text for byte-sensitive areas
+function sanitizeText(input: string | undefined) {
+  if (!input) return '';
+  try {
+    // More aggressive sanitization
+    let sanitized = input.normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
+    sanitized = sanitized.replace(/[^\x00-\x7F]/g, '');
+    sanitized = sanitized.replace(/[\x00-\x1F\x7F]/g, '');
+    return sanitized;
+  } catch (error) {
+    console.warn('Text sanitization error:', error);
+    return input.replace(/[^\x00-\x7F]/g, '');
+  }
+}
+
+// Utility to sanitize all investor data
+function sanitizeInvestorData(investors: Investor[]): Investor[] {
+  return investors.map(investor => {
+    const sanitized: Investor = { ...investor };
+    Object.keys(sanitized).forEach(key => {
+      const value = sanitized[key];
+      if (typeof value === 'string') {
+        sanitized[key] = sanitizeText(value);
+      }
+    });
+    return sanitized;
+  });
+}
+
 const ITEMS_PER_PAGE = 20;
 
 export function InvestorDashboard() {

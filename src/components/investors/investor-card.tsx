@@ -7,6 +7,12 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { User, Briefcase, MapPin, ExternalLink, Users } from "lucide-react"
 
+// Cleaner function to sanitize text for byte-sensitive areas
+function sanitizeText(input: string | undefined) {
+  if (!input) return '';
+  return input.normalize("NFKD").replace(/[\u0300-\u036f]/g, ""); // Remove diacritics
+}
+
 interface InvestorCardProps {
   investors: Investor[]
   onSelect: () => void
@@ -47,7 +53,7 @@ export function InvestorCard({ investors, onSelect }: InvestorCardProps) {
       >
         <CardHeader>
           <CardTitle className="font-headline tracking-tight flex items-start justify-between">
-            <span className="line-clamp-2">{primaryInvestor.investor_name}</span>
+            <span className="line-clamp-2">{sanitizeText(primaryInvestor.investor_name)}</span>
             {primaryInvestor.company_linkedin && (
               <Button
                 variant="ghost"
@@ -56,7 +62,7 @@ export function InvestorCard({ investors, onSelect }: InvestorCardProps) {
                 onClick={(e) => e.stopPropagation()}
                 className="flex-shrink-0"
               >
-                <a href={primaryInvestor.company_linkedin as string} target="_blank" rel="noopener noreferrer">
+                <a href={sanitizeText(primaryInvestor.company_linkedin)} target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="h-4 w-4" />
                 </a>
               </Button>
@@ -65,25 +71,25 @@ export function InvestorCard({ investors, onSelect }: InvestorCardProps) {
           <div className="text-sm text-muted-foreground pt-1 space-y-1">
             <div className="flex items-center">
               <User className="mr-2 h-4 w-4" />
-              <span>{primaryInvestor.contact_person}</span>
+              <span>{sanitizeText(primaryInvestor.contact_person)}</span>
             </div>
             {primaryInvestor.designation && (
               <div className="flex items-center">
                 <Briefcase className="mr-2 h-4 w-4" />
-                <span>{primaryInvestor.designation}</span>
+                <span>{sanitizeText(primaryInvestor.designation)}</span>
               </div>
             )}
           </div>
         </CardHeader>
         <CardContent className="flex-grow space-y-4">
           <p className="text-sm text-muted-foreground line-clamp-2 h-[40px]">
-            {primaryInvestor.overview}
+            {sanitizeText(primaryInvestor.overview)}
           </p>
           {investmentScoreValue > 0 && (
             <div>
               <div className="flex justify-between items-center mb-1">
                 <span className="text-xs font-semibold text-muted-foreground">Investment Score</span>
-                <span className="text-xs font-bold">{primaryInvestor.investment_score}</span>
+                <span className="text-xs font-bold">{sanitizeText(primaryInvestor.investment_score)}</span>
               </div>
               <Progress value={investmentScoreValue} className="h-2" />
             </div>
@@ -93,7 +99,7 @@ export function InvestorCard({ investors, onSelect }: InvestorCardProps) {
           {primaryInvestor.location &&
             <Badge variant="secondary" className="flex items-center">
               <MapPin className="mr-1.5 h-3 w-3" />
-              {primaryInvestor.location}
+              {sanitizeText(primaryInvestor.location)}
             </Badge>
           }
           {otherContactsCount > 0 &&
