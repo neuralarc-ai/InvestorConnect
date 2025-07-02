@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/shared/theme-toggle"
 import { LogOut, Rocket, Search, Plus } from "lucide-react"
 import { Input } from "@/components/ui/input"
+import { AddInvestorDialog } from "@/components/investors/add-investor-dialog"
 import { useState } from "react"
 
 interface HeaderProps {
@@ -18,7 +19,7 @@ export function Header({ searchQuery, setSearchQuery }: HeaderProps) {
 
   return (
     <>
-      <header className="sticky top-0 z-10 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="sticky w-full max-w-[1440px] mx-auto overflow-visible top-0 z-30 flex h-fit items-center justify-between gap-4  bg-transparent bg-card">
         <div className="container flex h-14 items-center justify-center">
           <div className="flex items-center mr-8">
             <Rocket className="mr-2 h-6 w-6" />
@@ -50,6 +51,11 @@ export function Header({ searchQuery, setSearchQuery }: HeaderProps) {
           </div>
         </div>
       </header>
+      
+      <AddInvestorDialog 
+        isOpen={isAddInvestorOpen} 
+        onClose={() => setIsAddInvestorOpen(false)} 
+      />
     </>
   )
 }
