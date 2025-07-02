@@ -57,6 +57,36 @@ export function InvestorDetailsSheet({ investors: investorGroup, isOpen, onClose
   const [emailStates, setEmailStates] = useState<Map<string, EmailState>>(new Map())
   const { toast } = useToast()
 
+  const primaryInvestor = investorGroup?.[0];
+
+  // Gemini firm details state
+  const [firmDetails, setFirmDetails] = useState<string | null>(null);
+  const [firmDetailsLoading, setFirmDetailsLoading] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && primaryInvestor) {
+      setFirmDetailsLoading(true);
+      fetch('/api/firm-details', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          investor_name: primaryInvestor.investor_name,
+          location: primaryInvestor.location,
+          investor_type: primaryInvestor.investor_type,
+          investment_score: primaryInvestor.investment_score,
+          practice_areas: primaryInvestor.practice_areas,
+          overview: primaryInvestor.overview,
+        }),
+      })
+        .then(res => res.json())
+        .then(res => {
+          setFirmDetails(res.details);
+          setFirmDetailsLoading(false);
+        })
+        .catch(() => setFirmDetailsLoading(false));
+    }
+  }, [isOpen, primaryInvestor]);
+
   useEffect(() => {
     if (isOpen) {
       setEmailStates(new Map())
@@ -73,15 +103,15 @@ export function InvestorDetailsSheet({ investors: investorGroup, isOpen, onClose
   }
 
   const handleGenerateEmail = async (investor: Investor) => {
-    const contactId = investor.Contact_Person;
+    const contactId = investor.contact_person;
     updateEmailState(contactId, { isLoading: true, content: '' })
 
     try {
       const input: GeneratePersonalizedEmailInput = {
-        Contact_Person: investor.Contact_Person,
-        Designation: investor.Designation || 'a leader',
-        Investor_Name: investor.Investor_Name,
-        Location: investor.Location || 'their region',
+        Contact_Person: investor.contact_person,
+        Designation: investor.designation || 'a leader',
+        Investor_Name: investor.investor_name,
+        Location: investor.location || 'their region',
         ourCompanyName: "Our Awesome Startup",
         pitchSummary: "We are building a revolutionary platform to change the world."
       }
@@ -109,8 +139,6 @@ export function InvestorDetailsSheet({ investors: investorGroup, isOpen, onClose
     updateEmailState(contactId, { content: value });
   }
 
-  const primaryInvestor = investorGroup?.[0];
-
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent className="w-full sm:max-w-4xl p-0">
@@ -118,22 +146,22 @@ export function InvestorDetailsSheet({ investors: investorGroup, isOpen, onClose
           {primaryInvestor && investorGroup && (
             <>
               <SheetHeader className="p-6">
-                <SheetTitle className="font-headline text-2xl">{primaryInvestor.Investor_Name}</SheetTitle>
+                <SheetTitle className="font-headline text-2xl">{primaryInvestor.investor_name}</SheetTitle>
                 <SheetDescription>{investorGroup.length} contact{investorGroup.length > 1 ? 's' : ''} found at this firm.</SheetDescription>
               </SheetHeader>
               <Separator />
               <div className="p-6">
-                <Accordion type="single" collapsible className="w-full" defaultValue={investorGroup[0].Contact_Person}>
+                <Accordion type="single" collapsible className="w-full" defaultValue={investorGroup[0].contact_person}>
                   {investorGroup.map((investor) => {
-                    const contactId = investor.Contact_Person;
+                    const contactId = investor.contact_person;
                     const emailState = emailStates.get(contactId) || { isLoading: false, content: '' };
                     
                     return (
                       <AccordionItem value={contactId} key={contactId}>
                         <AccordionTrigger>
                           <div className="flex-1 text-left">
-                            <p className="font-semibold text-lg">{investor.Contact_Person}</p>
-                            <p className="text-sm text-muted-foreground font-normal">{investor.Designation}</p>
+                            <p className="font-semibold text-lg">{investor.contact_person}</p>
+                            <p className="text-sm text-muted-foreground font-normal">{investor.designation}</p>
                           </div>
                         </AccordionTrigger>
                         <AccordionContent>
@@ -141,10 +169,10 @@ export function InvestorDetailsSheet({ investors: investorGroup, isOpen, onClose
                             <Card>
                                 <CardHeader><CardTitle className="text-lg font-headline">Contact Information</CardTitle></CardHeader>
                                 <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <DetailItem icon={Mail} label="Email" value={investor.Email} />
-                                    <DetailItem icon={Phone} label="Phone" value={investor.Phone} />
-                                    <DetailLinkItem icon={User} label="LinkedIn" value={investor.LinkedIn} />
-                                    <DetailLinkItem icon={Globe} label="Website" value={investor.Website} />
+                                    <DetailItem icon={Mail} label="Email" value={investor.email} />
+                                    <DetailItem icon={Phone} label="Phone" value={investor.phone} />
+                                    <DetailLinkItem icon={User} label="LinkedIn" value={investor.linkedin} />
+                                    <DetailLinkItem icon={Globe} label="Website" value={investor.website} />
                                 </CardContent>
                             </Card>
 
@@ -152,13 +180,19 @@ export function InvestorDetailsSheet({ investors: investorGroup, isOpen, onClose
                                 <CardHeader><CardTitle className="text-lg font-headline">Firm Details</CardTitle></CardHeader>
                                 <CardContent className="space-y-6">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                      <DetailItem icon={MapPin} label="Location" value={investor.Location} />
-                                      <DetailItem icon={Briefcase} label="Investor Type" value={investor.Investor_Type} />
-                                      <DetailItem icon={TrendingUp} label="Investment Score" value={investor.Investment_Score} />
-                                      <DetailItem icon={Info} label="Practice Areas" value={investor.Practice_Areas} />
+                                      <DetailItem icon={MapPin} label="Location" value={investor.location} />
+                                      <DetailItem icon={Briefcase} label="Investor Type" value={investor.investor_type} />
+                                      <DetailItem icon={TrendingUp} label="Investment Score" value={investor.investment_score} />
+                                      <DetailItem icon={Info} label="Practice Areas" value={investor.practice_areas} />
                                     </div>
                                     <Separator />
-                                    <DetailItem icon={Info} label="Overview" value={investor.Overview} />
+                                    <DetailItem icon={Info} label="Overview" value={investor.overview} />
+                                    {/* Gemini AI-generated summary */}
+                                    {firmDetailsLoading ? (
+                                      <div className="text-muted-foreground">Loading AI summary…</div>
+                                    ) : firmDetails ? (
+                                      <div className="text-sm text-muted-foreground whitespace-pre-line border-t pt-4 mt-4">{firmDetails}</div>
+                                    ) : null}
                                 </CardContent>
                             </Card>
             
@@ -169,7 +203,7 @@ export function InvestorDetailsSheet({ investors: investorGroup, isOpen, onClose
                               <CardContent className="space-y-4">
                                 <Button onClick={() => handleGenerateEmail(investor)} disabled={emailState.isLoading}>
                                   {emailState.isLoading ? <Loader2 className="animate-spin" /> : <Wand2 />}
-                                  Generate for {investor.Contact_Person}
+                                  Generate for {investor.contact_person}
                                 </Button>
                                 
                                 {emailState.content && (
@@ -181,7 +215,7 @@ export function InvestorDetailsSheet({ investors: investorGroup, isOpen, onClose
                                       className="text-sm"
                                     />
                                     <div className="flex gap-2">
-                                      <Button onClick={() => handleSendEmail(investor.Email)}><Send/>Send Email (Mock)</Button>
+                                      <Button onClick={() => handleSendEmail(investor.email)}><Send/>Send Email (Mock)</Button>
                                       <Button variant="outline" onClick={() => handleCopyToClipboard(emailState.content)}><Copy/>Copy</Button>
                                     </div>
                                   </div>

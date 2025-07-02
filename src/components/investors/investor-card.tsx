@@ -37,7 +37,7 @@ export function InvestorCard({ investors, onSelect }: InvestorCardProps) {
     return Math.min(Math.max(score, 0), 100); // Clamp between 0 and 100
   };
 
-  const investmentScoreValue = parseScore(primaryInvestor.Investment_Score)
+  const investmentScoreValue = parseScore(primaryInvestor.investment_score as string)
 
   return (
     <div className="relative card-hover-border">
@@ -47,8 +47,8 @@ export function InvestorCard({ investors, onSelect }: InvestorCardProps) {
       >
         <CardHeader>
           <CardTitle className="font-headline tracking-tight flex items-start justify-between">
-            <span className="line-clamp-2">{primaryInvestor.Investor_Name}</span>
-            {primaryInvestor.Company_LinkedIn && (
+            <span className="line-clamp-2">{primaryInvestor.investor_name}</span>
+            {primaryInvestor.company_linkedin && (
               <Button
                 variant="ghost"
                 size="icon"
@@ -56,7 +56,7 @@ export function InvestorCard({ investors, onSelect }: InvestorCardProps) {
                 onClick={(e) => e.stopPropagation()}
                 className="flex-shrink-0"
               >
-                <a href={primaryInvestor.Company_LinkedIn} target="_blank" rel="noopener noreferrer">
+                <a href={primaryInvestor.company_linkedin as string} target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="h-4 w-4" />
                 </a>
               </Button>
@@ -65,35 +65,35 @@ export function InvestorCard({ investors, onSelect }: InvestorCardProps) {
           <div className="text-sm text-muted-foreground pt-1 space-y-1">
             <div className="flex items-center">
               <User className="mr-2 h-4 w-4" />
-              <span>{primaryInvestor.Contact_Person}</span>
+              <span>{primaryInvestor.contact_person}</span>
             </div>
-            {primaryInvestor.Designation && (
+            {primaryInvestor.designation && (
               <div className="flex items-center">
                 <Briefcase className="mr-2 h-4 w-4" />
-                <span>{primaryInvestor.Designation}</span>
+                <span>{primaryInvestor.designation}</span>
               </div>
             )}
           </div>
         </CardHeader>
         <CardContent className="flex-grow space-y-4">
           <p className="text-sm text-muted-foreground line-clamp-2 h-[40px]">
-            {primaryInvestor.Overview}
+            {primaryInvestor.overview}
           </p>
           {investmentScoreValue > 0 && (
             <div>
               <div className="flex justify-between items-center mb-1">
                 <span className="text-xs font-semibold text-muted-foreground">Investment Score</span>
-                <span className="text-xs font-bold">{primaryInvestor.Investment_Score}</span>
+                <span className="text-xs font-bold">{primaryInvestor.investment_score}</span>
               </div>
               <Progress value={investmentScoreValue} className="h-2" />
             </div>
           )}
         </CardContent>
         <CardFooter className="flex-wrap gap-2">
-          {primaryInvestor.Location &&
+          {primaryInvestor.location &&
             <Badge variant="secondary" className="flex items-center">
               <MapPin className="mr-1.5 h-3 w-3" />
-              {primaryInvestor.Location}
+              {primaryInvestor.location}
             </Badge>
           }
           {otherContactsCount > 0 &&

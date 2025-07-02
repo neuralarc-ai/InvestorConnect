@@ -9,12 +9,77 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { UploadCloud } from "lucide-react"
+import { supabase } from "@/lib/supabaseClient"
 
-export function CsvUploader() {
-  const { setInvestors } = useInvestors()
-  const { toast } = useToast()
-  const [isDragging, setIsDragging] = useState(false)
-  const [previewData, setPreviewData] = useState<Investor[]>([])
+const FIELD_MAP = {
+  investor_name: [
+    "Investor Name", "Name", "Name of Investor", "Investor", "Full Name", "Investor_FullName", "Lead Investor",
+    "Primary Investor", "InvestorName", "Investor", "Investor Full Name", "Company", "Company Name", "Industry"
+  ],
+  contact_person: [
+    "Contact Person", "Contact", "Contact Name", "POC", "Point of Contact", "Person", "Primary Contact", 
+    "Representative", "Contact_Person", "Business Contact", "Applicant Contact"
+  ],
+  designation: [
+    "Designation", "Title", "Position", "Role", "Job Title", "Employee Title", "Designation", "Investor Role", 
+    "Contact Title", "Position Title", "Job Role"
+  ],
+  email: [
+    "Email", "Email Address", "E-mail", "email_id", "Official Email", "Mail", "Primary Email", "Contact Email", 
+    "Investor Email", "EmailAddress", "EmailID", "Email ID", "Email_Address", "E mail"
+  ],
+  phone: [
+    "Phone", "Mobile", "Contact Number", "Phone No", "Phone Number", "Mobile No.", "Telephone", "Mobile Number", 
+    "Investor Phone", "Cell", "Cell Phone", "PhoneNumber", "ContactPhone"
+  ],
+  website: [
+    "Website", "Site", "Web URL", "Company Website", "Homepage", "Website URL", "Company_Site", "URL", 
+    "WebsiteUrl", "WebSite", "Company Website URL"
+  ],
+  linkedin: [
+    "Linkedin", "LinkedIn Profile", "Personal LinkedIn", "LinkedIn URL", "Linkedin_Profile", "LinkedIn (Personal)", 
+    "Investor LinkedIn", "LinkedInId", "LinkedinURL", "LinkedInLink"
+  ],
+  company_linkedin: [
+    "Company Linkedin", "LinkedIn Company", "Company Page", "LinkedIn Company Page", "CompanyLinkedIn", 
+    "Org LinkedIn", "Organization LinkedIn", "Company LinkedIn URL"
+  ],
+  twitter: [
+    "Twitter", "Twitter(X)", "X", "Twitter Handle", "X Handle", "X.com", "Twitter Profile", "XHandle", 
+    "TwitterID", "X URL"
+  ],
+  facebook: [
+    "Facebook", "FB", "FB Link", "Facebook URL", "Company Facebook", "Personal FB", "Facebook_Page", "FacebookURL", 
+    "FBUrl", "FacebookProfile"
+  ],
+  country: [
+    "Country", "Nation", "Location", "Region", "Country of Origin", "Headquarter Country", "Home Country", 
+    "Investor Country", "CountryName", "Country Code", "Country/Region"
+  ]
+};
+
+function normalizeHeader(header: string) {
+  return header.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function mapHeadersToDbColumns(headers: string[]): Record<string, number> {
+  const headerMap: Record<string, number> = {};
+  const normalizedHeaders = headers.map(normalizeHeader);
+  for (const dbCol in FIELD_MAP) {
+    for (const possible of FIELD_MAP[dbCol]) {
+      const idx = normalizedHeaders.findIndex(h => h === normalizeHeader(possible));
+      if (idx !== -1) {
+        headerMap[dbCol] = idx;
+        break;
+      }
+    }
+  }
+  return headerMap;
+}
+
+const DB_COLUMNS = [
+  "investor_name", "contact_person", "designation", "email", "phone", "website", "linkedin", "company_linkedin", "twitter", "facebook", "country"
+];
 
   const parseCsv = (csvText: string): Investor[] => {
     const lines = csvText.trim().split(/\r\n?|\n/);
@@ -45,26 +110,14 @@ export function CsvUploader() {
     };
 
     const originalHeaders = parseLine(lines[0]);
-    const headers = originalHeaders.map(h => h.toLowerCase().replace(/[\s_]+/g, ''));
+  const headerMap = mapHeadersToDbColumns(originalHeaders);
 
-    const findIndex = (possibleNames: string[]): number => {
-      for (const name of possibleNames) {
-        const index = headers.findIndex(h => h === name);
-        if (index !== -1) return index;
-      }
-      return -1;
-    };
-
-    const requiredHeaders = {
-      investorName: findIndex(['investorname']),
-      contactPerson: findIndex(['contactperson']),
-    };
-
-    if (requiredHeaders.investorName === -1 || requiredHeaders.contactPerson === -1) {
+  // Require at least investor_name and contact_person
+  if (headerMap.investor_name === undefined || headerMap.contact_person === undefined) {
       toast({
         variant: "destructive",
         title: "Invalid CSV Format",
-        description: "CSV must contain 'Investor_Name' and 'Contact_Person' columns.",
+      description: "CSV must contain recognizable company/investor name and contact person columns.",
       });
       return [];
     }
@@ -74,17 +127,13 @@ export function CsvUploader() {
       const values = parseLine(line);
       if (values.length !== originalHeaders.length) return null;
 
-      const investor: Investor = {
-        Investor_Name: '',
-        Contact_Person: '',
-      };
-
-      originalHeaders.forEach((header, index) => {
-        investor[header] = values[index] || '';
+    const investor: Investor = {} as Investor;
+    DB_COLUMNS.forEach(col => {
+      const idx = headerMap[col];
+      investor[col] = idx !== undefined ? values[idx] || null : null;
       });
-
       return investor;
-    }).filter((investor): investor is Investor => investor !== null && !!investor.Investor_Name && !!investor.Contact_Person);
+  }).filter((investor): investor is Investor => investor !== null && !!investor.investor_name && !!investor.contact_person);
 
     if (investors.length === 0 && lines.length > 1) {
       toast({
@@ -97,6 +146,12 @@ export function CsvUploader() {
 
     return investors;
   }
+
+export function CsvUploader() {
+  const { setInvestors } = useInvestors()
+  const { toast } = useToast()
+  const [isDragging, setIsDragging] = useState(false)
+  const [previewData, setPreviewData] = useState<Investor[]>([])
 
   const handleFile = useCallback((file: File) => {
     if (file && (file.type === "text/csv" || file.name.endsWith('.csv'))) {
@@ -138,9 +193,24 @@ export function CsvUploader() {
     }
   }
   
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     setInvestors(previewData)
     toast({ title: "Success", description: `${previewData.length} investors imported.` })
+    // Supabase insert logic
+    if (previewData.length > 0) {
+      // Map to DB columns for Supabase
+      const rows = previewData.map(inv => {
+        const row: Record<string, any> = {};
+        DB_COLUMNS.forEach(col => {
+          row[col] = inv[col] || null;
+        });
+        return row;
+      });
+      const { error } = await supabase.from('investors').insert(rows);
+      if (error) {
+        toast({ variant: "destructive", title: "Supabase Error", description: error.message });
+      }
+    }
     setPreviewData([])
   }
 
@@ -183,10 +253,10 @@ export function CsvUploader() {
               <TableBody>
                 {previewData.map((investor, index) => (
                   <TableRow key={index}>
-                    <TableCell>{investor.Investor_Name}</TableCell>
-                    <TableCell>{investor.Contact_Person}</TableCell>
-                    <TableCell>{investor.Location}</TableCell>
-                    <TableCell>{investor.Investor_Type}</TableCell>
+                    <TableCell>{investor.investor_name}</TableCell>
+                    <TableCell>{investor.contact_person}</TableCell>
+                    <TableCell>{investor.country}</TableCell>
+                    <TableCell>{investor.designation}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

@@ -12,69 +12,34 @@ import { Button } from "@/components/ui/button"
 const ITEMS_PER_PAGE = 20;
 
 export function InvestorDashboard() {
-  const { investors } = useInvestors()
+  const { groupedInvestors, totalGroups, isLoading, progress, totalCount, currentPage, setCurrentPage, pageSize } = useInvestors()
   const [selectedInvestorGroup, setSelectedInvestorGroup] = useState<Investor[] | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
-  const [currentPage, setCurrentPage] = useState(1)
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery]);
-
-  const groupedInvestors = useMemo(() => {
-    if (!investors || investors.length === 0) {
-      return []
-    }
-    const groups = new Map<string, Investor[]>()
-    investors.forEach(investor => {
-      const key = investor.Investor_Name
-      if (!groups.has(key)) {
-        groups.set(key, [])
-      }
-      groups.get(key)!.push(investor)
-    })
-    return Array.from(groups.values())
-  }, [investors])
-  
-  const filteredInvestors = useMemo(() => {
-    if (!searchQuery) return groupedInvestors;
-
-    const lowercasedQuery = searchQuery.toLowerCase();
-    return groupedInvestors.filter(group => {
-        const companyNameMatch = group[0].Investor_Name.toLowerCase().includes(lowercasedQuery);
-        const contactMatch = group.some(contact => 
-            contact.Contact_Person.toLowerCase().includes(lowercasedQuery) ||
-            (contact.Designation && contact.Designation.toLowerCase().includes(lowercasedQuery))
-        );
-        return companyNameMatch || contactMatch;
-    });
-  }, [groupedInvestors, searchQuery]);
-
-  const paginatedInvestors = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredInvestors.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [filteredInvestors, currentPage]);
-
-  const totalPages = Math.ceil(filteredInvestors.length / ITEMS_PER_PAGE);
-
-  const handleNextPage = () => {
-    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
-  };
-
-  const handlePrevPage = () => {
-    setCurrentPage((prev) => Math.max(prev - 1, 1));
-  };
+  const totalPages = Math.ceil(totalGroups / pageSize)
+  const paginatedGroups = groupedInvestors.slice((currentPage - 1) * pageSize, currentPage * pageSize)
 
   return (
     <div className="flex flex-col min-h-screen">
       <Header searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
       <main className="flex-grow container mx-auto py-8 px-4">
-        {investors.length > 0 ? (
+        {isLoading ? (
+          <div className="w-full h-screen flex flex-col justify-center items-center">
+            <p className="mb-2 text-lg font-medium">Loading {totalCount} records…</p>
+            <div className="w-2/3 h-3 bg-gray-200 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-black dark:bg-white transition-all duration-200"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            <p className="text-sm mt-1">{progress}% complete</p>
+          </div>
+        ) : groupedInvestors.length > 0 ? (
           <div className="w-full">
             <div className="flex flex-wrap justify-center gap-6">
-              {paginatedInvestors.map((group) => (
+              {paginatedGroups.map((group, index) => (
                 <InvestorCard
-                  key={group[0].Investor_Name}
+                  key={`${group[0]?.investor_name?.toLowerCase().trim() || 'unknown'}-${index}`}
                   investors={group}
                   onSelect={() => setSelectedInvestorGroup(group)}
                 />
@@ -82,13 +47,13 @@ export function InvestorDashboard() {
             </div>
             {totalPages > 1 && (
               <div className="flex justify-center items-center space-x-4 mt-8">
-                <Button onClick={handlePrevPage} disabled={currentPage === 1} variant="outline">
+                <Button onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))} disabled={currentPage === 1} variant="outline">
                   Previous
                 </Button>
                 <span className="text-sm font-medium">
                   Page {currentPage} of {totalPages}
                 </span>
-                <Button onClick={handleNextPage} disabled={currentPage === totalPages} variant="outline">
+                <Button onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages} variant="outline">
                   Next
                 </Button>
               </div>
