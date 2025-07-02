@@ -3,6 +3,7 @@ import './globals.css';
 import { ThemeProvider } from '@/providers/theme-provider';
 import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from '@/providers/auth-provider';
+import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
   title: 'InvestorConnect',
@@ -25,8 +26,11 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthProvider>
-            {children}
+            <div className="max-w-[1440px] mx-auto w-full">
+              {children}
+            </div>
             <Toaster />
+            <Footer />
           </AuthProvider>
         </ThemeProvider>
       </body>

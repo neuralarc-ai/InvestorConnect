@@ -3,10 +3,11 @@
 import { useAuth } from "@/providers/auth-provider"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/shared/theme-toggle"
-import { LogOut, Rocket, Search, Plus } from "lucide-react"
+import { LogOut, Rocket, Search, Plus, Building2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { AddInvestorDialog } from "@/components/investors/add-investor-dialog"
 import { useState } from "react"
+import CompanyProfileDialog from "@/components/CompanyProfileDialog"
 
 interface HeaderProps {
   searchQuery: string
@@ -16,11 +17,12 @@ interface HeaderProps {
 export function Header({ searchQuery, setSearchQuery }: HeaderProps) {
   const { logout } = useAuth()
   const [isAddInvestorOpen, setIsAddInvestorOpen] = useState(false)
+  const [isCompanyDialogOpen, setIsCompanyDialogOpen] = useState(false)
 
   return (
     <>
-      <header className="sticky w-full max-w-[1440px] mx-auto overflow-visible top-0 z-30 flex h-fit items-center justify-between gap-4  bg-transparent bg-card">
-        <div className="container flex h-14 items-center justify-center">
+      <header className="sticky w-full overflow-visible top-0 z-30 flex h-fit items-center justify-between gap-4 bg-card border-b border-border shadow-md">
+        <div className="max-w-[1440px] mx-auto w-full flex h-14 items-center justify-center">
           <div className="flex items-center mr-8">
             <Rocket className="mr-2 h-6 w-6" />
             <span className="font-headline text-lg font-bold">InvestorConnect</span>
@@ -44,6 +46,14 @@ export function Header({ searchQuery, setSearchQuery }: HeaderProps) {
             >
               <Plus className="h-4 w-4" />
             </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsCompanyDialogOpen(true)}
+              aria-label="Edit company profile"
+            >
+              <Building2 className="h-4 w-4" />
+            </Button>
             <ThemeToggle />
             <Button variant="ghost" size="icon" onClick={logout} aria-label="Log out">
               <LogOut className="h-4 w-4" />
@@ -55,6 +65,11 @@ export function Header({ searchQuery, setSearchQuery }: HeaderProps) {
       <AddInvestorDialog 
         isOpen={isAddInvestorOpen} 
         onClose={() => setIsAddInvestorOpen(false)} 
+      />
+      <CompanyProfileDialog
+        open={isCompanyDialogOpen}
+        onOpenChange={setIsCompanyDialogOpen}
+        isEditable={true}
       />
     </>
   )

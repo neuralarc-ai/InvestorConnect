@@ -1,10 +1,27 @@
+@font-face {
+  font-family: 'Fustat';
+  src: url('/fonts/Fustat-Regular.woff2') format('woff2'),
+       url('/fonts/Fustat-Regular.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Fustat';
+  src: url('/fonts/Fustat-Bold.woff2') format('woff2'),
+       url('/fonts/Fustat-Bold.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+html, body {
+  font-family: 'Fustat', 'Inter', Arial, sans-serif;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-body {
-  font-family: Arial, Helvetica, sans-serif;
-}
 
 @layer base {
   :root {
