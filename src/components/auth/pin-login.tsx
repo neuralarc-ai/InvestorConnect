@@ -5,7 +5,6 @@ import { useAuth } from "@/providers/auth-provider"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Lock } from "lucide-react"
 
 export function PinLogin() {
   const [pin, setPin] = useState("")
@@ -31,7 +30,7 @@ export function PinLogin() {
       <Card className={`w-full max-w-sm ${error ? "animate-shake" : ""}`}>
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-            <Lock className="h-8 w-8 text-primary" />
+            <img src="/F.png" alt="Logo" className="h-10 w-10 object-contain" />
           </div>
           <CardTitle className="font-headline text-2xl">86F</CardTitle>
           <CardDescription>Enter your 4-digit PIN to access the dashboard.</CardDescription>
