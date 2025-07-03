@@ -10,6 +10,7 @@ import { useState, useEffect } from "react"
 import CompanyProfileDialog from "@/components/CompanyProfileDialog"
 import { InvestorAnalysisDashboard } from "@/components/investors/investor-analysis-dashboard"
 import { supabase } from "@/lib/supabaseClient"
+import Image from 'next/image'
 
 interface HeaderProps {
   searchQuery: string
@@ -40,8 +41,7 @@ export function Header({ searchQuery, setSearchQuery }: HeaderProps) {
       <header className="sticky w-full overflow-visible top-0 z-30 flex h-fit items-center justify-between gap-4 bg-card ">
         <div className="max-w-[1440px] mx-auto w-full flex h-14 items-center justify-center">
           <div className="flex items-center mr-8">
-            <Rocket className="mr-2 h-6 w-6" />
-            <span className="font-headline text-lg font-bold">InvestorConnect</span>
+            <Image src="/F.png" alt="Logo" width={32} height={32} className="mr-2" />
           </div>
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />

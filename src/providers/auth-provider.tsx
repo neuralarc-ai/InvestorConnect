@@ -21,7 +21,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = (pin: string) => {
     if (pin === CORRECT_PIN) {
       setIsAuthenticated(true)
-      toast({ title: "Login Successful", description: "Welcome to InvestorConnect." })
+      toast({ title: "Login Successful", description: "Welcome to 86F." })
       return true
     } else {
       toast({

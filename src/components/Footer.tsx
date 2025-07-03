@@ -12,13 +12,13 @@ import {
 
 const TERMS_CONTENT = (
   <div className="space-y-4 text-left">
-    <p>Welcome to InvestorConnect. By accessing or using https://investorconnect.neuralarc.ai (the "Platform"), you agree to be bound by these Terms of Use. If you do not agree, please do not use the Platform.</p>
+    <p>Welcome to 86F. By accessing or using https://86f.neuralarc.ai (the "Platform"), you agree to be bound by these Terms of Use. If you do not agree, please do not use the Platform.</p>
     <h3 className="font-semibold mt-4">Use of Platform</h3>
     <p>The Platform is provided for informational and experimental purposes only. You agree to use it in compliance with all applicable laws and regulations.</p>
     <h3 className="font-semibold mt-4">User Content</h3>
     <p>You are responsible for any content you input or generate using the Platform. Do not submit unlawful, harmful, or infringing content.</p>
     <h3 className="font-semibold mt-4">Intellectual Property</h3>
-    <p>All content, trademarks, and intellectual property on the Platform are owned by InvestorConnect or its licensors. You may not copy, reproduce, or distribute any part of the Platform without permission.</p>
+    <p>All content, trademarks, and intellectual property on the Platform are owned by 86F or its licensors. You may not copy, reproduce, or distribute any part of the Platform without permission.</p>
     <h3 className="font-semibold mt-4">Disclaimer of Warranties</h3>
     <p>The Platform is provided "as is" without warranties of any kind. We do not guarantee the accuracy, completeness, or reliability of any content or output.</p>
     <h3 className="font-semibold mt-4">Limitation of Liability</h3>
@@ -33,7 +33,7 @@ const TERMS_CONTENT = (
 
 const PRIVACY_CONTENT = (
   <div className="space-y-4 text-left">
-    <p>InvestorConnect ("Platform," "we," "us," or "our") is committed to protecting your privacy. This Privacy Policy outlines how we collect, use, disclose, and safeguard your information when you visit our Platform, including any AI-based tools or services we provide.</p>
+    <p>86F ("Platform," "we," "us," or "our") is committed to protecting your privacy. This Privacy Policy outlines how we collect, use, disclose, and safeguard your information when you visit our Platform, including any AI-based tools or services we provide.</p>
     <h3 className="font-semibold mt-4">1. Information We Collect</h3>
     <p><b>a. Personal Information</b><br/>Information you voluntarily provide, such as: Name, Email address, Any additional contact details, Content or inputs provided to AI tools (if associated with a user identity)</p>
     <p><b>b. Usage Data</b><br/>Automatically collected information such as: IP address, Browser type and version, Operating system, Date and time of your visit, Pages viewed and time spent, Referring/exit pages, Clickstream data</p>
@@ -75,7 +75,7 @@ const PRIVACY_CONTENT = (
 const DISCLAIMER_CONTENT = (
   <div className="space-y-4 text-left">
     <p>Please read this Disclaimer carefully before using the Platform.</p>
-    <p>The tools and content available at https://investorconnect.neuralarc.ai are provided "as is" and are intended for informational and experimental purposes only. By using the Platform, you acknowledge and agree to the following:</p>
+    <p>The tools and content available at https://86f.neuralarc.ai are provided "as is" and are intended for informational and experimental purposes only. By using the Platform, you acknowledge and agree to the following:</p>
     <h3 className="font-semibold mt-4">No Professional Advice</h3>
     <p>The AI-generated outputs are not a substitute for professional advice in:</p>
     <ul className="list-disc ml-6">
@@ -106,7 +106,7 @@ const DISCLAIMER_CONTENT = (
 const RESPONSIBLE_CONTENT = (
   <div className="space-y-4 text-left">
     <h3 className="font-semibold mt-4">Responsible AI & Disclaimer</h3>
-    <p>We are committed to developing and deploying AI responsibly. AI technologies hosted on https://investorconnect.neuralarc.ai are designed to augment human decision-making, not replace it.</p>
+    <p>We are committed to developing and deploying AI responsibly. AI technologies hosted on https://86f.neuralarc.ai are designed to augment human decision-making, not replace it.</p>
     <h3 className="font-semibold mt-4">Our Principles</h3>
     <ul className="list-disc ml-6">
       <li><b>Transparency</b><br/>Clear communication when users are interacting with AI. Explanation of how results are generated wherever feasible.</li>
@@ -185,7 +185,7 @@ export default function Footer() {
           </Dialog>
         <span className="mx-1">&bull;</span>
         <span>
-          All rights reserved. InvestorConnect, a thing by 
+          All rights reserved. 86F, a thing by 
           <a 
             href="https://neuralarc.ai" 
             target="_blank" 

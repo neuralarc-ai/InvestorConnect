@@ -93,7 +93,7 @@ This PIN will expire in 48 hours for security purposes. Please let me know if yo
 
 ## Usage
 
-1. **Open investor details** in the InvestorConnect app
+1. **Open investor details** in the 86F app
 2. **Click "Generate Email with Pitch Access"** 
 3. **Review the generated email** - includes personalized message + pitch access
 4. **Edit if needed** - modify the content as required

@@ -156,7 +156,7 @@ export function InvestorDashboard() {
       <main className="flex-grow container mx-auto py-8 px-4">
         {/* Filter Card (country only) - only show if there are investors */}
         {groupedInvestors.length > 0 && (
-          <div className="bg-[#FAF9F6] border border-[#ECECEC] rounded-2xl p-6 mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-6 shadow-sm">
+          <div className="rounded-2xl p-6 mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-6 ">
             <div className="flex items-center gap-2 mb-2">
               <Filter className="h-5 w-5 text-muted-foreground" />
               <span className="font-semibold text-lg">Filter Leads</span>
@@ -231,7 +231,7 @@ export function InvestorDashboard() {
           </div>
         ) : (
           <div className="w-full max-w-2xl text-center mx-auto mt-16">
-            <h2 className="text-3xl font-bold font-headline mb-4">Welcome to InvestorConnect</h2>
+            <h2 className="text-3xl font-bold font-headline mb-4">Welcome to 86F</h2>
             <p className="text-muted-foreground mb-8 max-w-lg mx-auto">
               Get started by uploading your investor list. Drag and drop a CSV file below or click to select one.
             </p>

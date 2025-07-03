@@ -1,4 +1,4 @@
-# **App Name**: InvestorConnect
+# **App Name**: 86F
 
 ## Core Features:
 

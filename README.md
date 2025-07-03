@@ -1,4 +1,4 @@
-# InvestorConnect
+# 86F
 
 A modern investor relationship management platform built with Next.js 15, TypeScript, and Supabase.
 

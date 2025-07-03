@@ -6,7 +6,7 @@ import { AuthProvider } from '@/providers/auth-provider';
 import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
-  title: 'InvestorConnect',
+  title: '86F',
   description: 'Connect with investors seamlessly.',
 };
 

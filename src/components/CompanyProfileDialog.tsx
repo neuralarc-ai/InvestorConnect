@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -7,27 +7,44 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabaseClient';
 import { useToast } from '@/hooks/use-toast';
 import { Building2, Box } from 'lucide-react';
+import { Dialog as UIDialog, DialogContent as UIDialogContent, DialogTitle as UIDialogTitle } from '@/components/ui/dialog';
 
 const industryOptions = [
   'SaaS', 'Consulting', 'Finance', 'Healthcare', 'Education', 'Manufacturing', 'Retail', 'Technology', 'Other'
 ];
 
-export default function CompanyProfileDialog({ open, onOpenChange, isEditable = false }) {
+interface Service {
+  name: string;
+  category: string;
+  description: string;
+  targetMarket: string;
+}
+
+interface CompanyProfileDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  isEditable?: boolean;
+}
+
+export default function CompanyProfileDialog({ open, onOpenChange, isEditable = false }: CompanyProfileDialogProps) {
   const { toast } = useToast();
   const [companyName, setCompanyName] = useState('');
   const [website, setWebsite] = useState('');
   const [industry, setIndustry] = useState('');
   const [companyDescription, setCompanyDescription] = useState('');
-  const [services, setServices] = useState([]);
+  const [services, setServices] = useState<Service[]>([]);
   const [showAddService, setShowAddService] = useState(false);
-  const [serviceForm, setServiceForm] = useState({
+  const [serviceForm, setServiceForm] = useState<Service>({
     name: '',
     category: 'Service',
     description: '',
     targetMarket: ''
   });
   const [isSaving, setIsSaving] = useState(false);
-  const [companyId, setCompanyId] = useState(null);
+  const [companyId, setCompanyId] = useState<number | null>(null);
+  const [isAIFetching, setIsAIFetching] = useState(false);
+  const websiteInputRef = useRef<HTMLInputElement>(null);
+  const [selectedService, setSelectedService] = useState<Service | null>(null);
 
   useEffect(() => {
     if (open) fetchCompany();
@@ -45,9 +62,9 @@ export default function CompanyProfileDialog({ open, onOpenChange, isEditable = 
     }
   };
 
-  const fetchServices = async (companyId) => {
+  const fetchServices = async (companyId: number) => {
     const { data } = await supabase.from('company_service').select('*').eq('company_id', companyId);
-    setServices(data || []);
+    setServices((data as Service[]) || []);
   };
 
   const handleSave = async () => {
@@ -76,7 +93,7 @@ export default function CompanyProfileDialog({ open, onOpenChange, isEditable = 
         await supabase.from('company_service').delete().eq('company_id', cid);
         if (services.length > 0) {
           await supabase.from('company_service').insert(
-            services.map(s => ({
+            services.map((s: Service) => ({
               company_id: cid,
               name: s.name,
               category: s.category,
@@ -95,6 +112,36 @@ export default function CompanyProfileDialog({ open, onOpenChange, isEditable = 
     }
   };
 
+  // AI autofill on website blur
+  const handleWebsiteBlur = async () => {
+    if (!website || (!isEditable)) return;
+    if (companyDescription || services.length > 0) return;
+    setIsAIFetching(true);
+    try {
+      const res = await fetch('/api/ai/fetch-company-info', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: website })
+      });
+      if (!res.ok) {
+        toast({ title: 'AI Error', description: 'Failed to fetch company info from AI.', variant: 'destructive' });
+        setIsAIFetching(false);
+        return;
+      }
+      const data = await res.json();
+      console.log('AI company info response:', data);
+      if (data.description) setCompanyDescription(data.description);
+      if (Array.isArray(data.services) && data.services.length > 0) setServices(data.services);
+      if (!data.description && (!data.services || data.services.length === 0)) {
+        toast({ title: 'AI Info', description: 'No company info found for this website.' });
+      }
+    } catch (e) {
+      toast({ title: 'AI Error', description: 'Could not analyze website.', variant: 'destructive' });
+    } finally {
+      setIsAIFetching(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl w-full rounded-2xl bg-white max-h-[90vh] flex flex-col p-8 overflow-y-auto">
@@ -103,7 +150,7 @@ export default function CompanyProfileDialog({ open, onOpenChange, isEditable = 
         </DialogTitle>
         <div className="flex flex-col gap-6 px-2 pb-2">
           <Input value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Company Name" required readOnly={!isEditable} className="h-12 text-base px-4" />
-          <Input value={website} onChange={e => setWebsite(e.target.value)} placeholder="Website URL" required readOnly={!isEditable} className="h-12 text-base px-4" />
+          <Input value={website} onChange={e => setWebsite(e.target.value)} placeholder="Website URL" required readOnly={!isEditable} className="h-12 text-base px-4" onBlur={handleWebsiteBlur} ref={websiteInputRef} />
           <Select value={industry} onValueChange={setIndustry} disabled={!isEditable}>
             <SelectTrigger className="w-full h-12 text-base px-4">
               <SelectValue placeholder="Select your industry" />
@@ -115,6 +162,9 @@ export default function CompanyProfileDialog({ open, onOpenChange, isEditable = 
             </SelectContent>
           </Select>
           <Textarea value={companyDescription} onChange={e => setCompanyDescription(e.target.value)} placeholder="Company Description" required className="resize-none min-h-[120px] text-base px-4 py-3" readOnly={!isEditable} />
+          {isAIFetching && (
+            <div className="text-sm text-blue-600 mb-2">Analyzing website and fetching company info...</div>
+          )}
           {/* Services card */}
           <div className="bg-[#F8F7F3] border border-[#E0E0E0] rounded-xl mt-8 p-6 shadow-sm">
             <div className="flex items-center justify-between mb-6">
@@ -196,16 +246,17 @@ export default function CompanyProfileDialog({ open, onOpenChange, isEditable = 
                   <span className="text-base">Add your company's services and products</span>
                 </div>
               ) : (
-                services.map((s, i) => (
+                services.map((s: Service, i: number) => (
                   <div
                     key={i}
-                    className="relative bg-white border border-[#E0E0E0] rounded-2xl p-3 min-w-[180px] max-w-xs h-40 flex flex-col shadow-sm"
+                    className="relative bg-white border border-[#E0E0E0] rounded-2xl p-3 min-w-[180px] max-w-xs h-40 flex flex-col shadow-sm cursor-pointer"
+                    onClick={() => setSelectedService(s)}
                   >
                     {/* Remove button */}
                     <button
                       type="button"
                       className="absolute top-2 right-2 text-lg text-[#282828] hover:text-red-500"
-                      onClick={() => setServices(services.filter((_, idx) => idx !== i))}
+                      onClick={e => { e.stopPropagation(); setServices(services.filter((_, idx) => idx !== i)); }}
                       disabled={!isEditable}
                       aria-label="Remove service"
                     >
@@ -219,7 +270,7 @@ export default function CompanyProfileDialog({ open, onOpenChange, isEditable = 
                       </span>
                     </div>
                     {/* Description */}
-                    <div className="text-[#5E6156] text-sm leading-snug mb-1">
+                    <div className="text-[#5E6156] text-sm leading-snug mb-1 line-clamp-3">
                       {s.description}
                     </div>
                     {/* Target */}
@@ -236,6 +287,17 @@ export default function CompanyProfileDialog({ open, onOpenChange, isEditable = 
           <Button onClick={handleSave} disabled={isSaving || !isEditable} className="h-12 px-8 text-base">OK</Button>
         </DialogFooter>
       </DialogContent>
+      {/* Service Detail Modal */}
+      <UIDialog open={!!selectedService} onOpenChange={open => !open && setSelectedService(null)}>
+        <UIDialogContent className="max-w-md">
+          <UIDialogTitle className="mb-2">{selectedService?.name}</UIDialogTitle>
+          <div className="mb-2"><span className="font-semibold">Category:</span> {selectedService?.category}</div>
+          <div className="mb-2"><span className="font-semibold">Description:</span><br />{selectedService?.description}</div>
+          {selectedService?.targetMarket && (
+            <div className="mb-2"><span className="font-semibold">Target Market:</span> {selectedService.targetMarket}</div>
+          )}
+        </UIDialogContent>
+      </UIDialog>
     </Dialog>
   );
 } 
