@@ -3,12 +3,13 @@
 import { useAuth } from "@/providers/auth-provider"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/shared/theme-toggle"
-import { LogOut, Rocket, Search, Plus, Building2, TrendingUp } from "lucide-react"
+import { LogOut, Rocket, Search, Plus, Building2, TrendingUp, History } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { AddInvestorDialog } from "@/components/investors/add-investor-dialog"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import CompanyProfileDialog from "@/components/CompanyProfileDialog"
 import { InvestorAnalysisDashboard } from "@/components/investors/investor-analysis-dashboard"
+import { supabase } from "@/lib/supabaseClient"
 
 interface HeaderProps {
   searchQuery: string
@@ -20,6 +21,19 @@ export function Header({ searchQuery, setSearchQuery }: HeaderProps) {
   const [isAddInvestorOpen, setIsAddInvestorOpen] = useState(false)
   const [isCompanyDialogOpen, setIsCompanyDialogOpen] = useState(false)
   const [isAnalysisOpen, setIsAnalysisOpen] = useState(false)
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false)
+  const [emailHistory, setEmailHistory] = useState<any[]>([])
+
+  useEffect(() => {
+    if (isHistoryOpen) {
+      supabase
+        .from('email_history')
+        .select('*')
+        .order('sent_at', { ascending: false })
+        .limit(50)
+        .then(({ data }) => setEmailHistory(data || []))
+    }
+  }, [isHistoryOpen])
 
   return (
     <>
@@ -64,6 +78,14 @@ export function Header({ searchQuery, setSearchQuery }: HeaderProps) {
             >
               <TrendingUp className="h-4 w-4" />
             </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsHistoryOpen(true)}
+              aria-label="View email history"
+            >
+              <History className="h-4 w-4" />
+            </Button>
             <ThemeToggle />
             <Button variant="ghost" size="icon" onClick={logout} aria-label="Log out">
               <LogOut className="h-4 w-4" />
@@ -97,6 +119,48 @@ export function Header({ searchQuery, setSearchQuery }: HeaderProps) {
               </div>
               <div className="h-full overflow-y-auto p-4">
                 <InvestorAnalysisDashboard />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {isHistoryOpen && (
+        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="w-full max-w-lg bg-background rounded-lg shadow-lg overflow-hidden">
+              <div className="flex items-center justify-between p-4 border-b">
+                <h2 className="text-xl font-semibold">Email History</h2>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsHistoryOpen(false)}
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="h-96 overflow-y-auto p-4">
+                {emailHistory.length === 0 ? (
+                  <p className="text-muted-foreground">No email history found.</p>
+                ) : (
+                  <table className="min-w-full text-sm">
+                    <thead>
+                      <tr>
+                        <th className="px-4 py-2 text-left">Name</th>
+                        <th className="px-4 py-2 text-left">Email</th>
+                        <th className="px-4 py-2 text-left">Sent At</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {emailHistory.map((row, idx) => (
+                        <tr key={row.id || idx} className="border-t">
+                          <td className="px-4 py-2">{row.contact_person}</td>
+                          <td className="px-4 py-2">{row.email}</td>
+                          <td className="px-4 py-2">{row.sent_at ? new Date(row.sent_at).toLocaleString() : ''}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
               </div>
             </div>
           </div>

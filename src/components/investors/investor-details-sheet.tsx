@@ -12,6 +12,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Wand2, Mail, Copy, Loader2, Send, Briefcase, Globe, Phone, User, MapPin, TrendingUp, Info } from "lucide-react"
+import { supabase } from "@/lib/supabaseClient"
+import { Badge } from "@/components/ui/badge"
 
 interface InvestorDetailsSheetProps {
   investors: Investor[] | null
@@ -207,6 +209,7 @@ export function InvestorDetailsSheet({ investors: investorGroup, isOpen, onClose
   const [emailStates, setEmailStates] = useState<Map<string, EmailState>>(new Map())
   const [selectedInvestor, setSelectedInvestor] = useState<Investor | null>(null)
   const { toast } = useToast()
+  const [emailHistory, setEmailHistory] = useState<any[]>([])
 
   const primaryInvestor = investorGroup?.[0];
 
@@ -216,6 +219,20 @@ export function InvestorDetailsSheet({ investors: investorGroup, isOpen, onClose
       setSelectedInvestor(null);
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen && investorGroup && investorGroup.length > 0) {
+      // Fetch email history for these contacts
+      const emails = investorGroup.map(inv => inv.email).filter(Boolean)
+      if (emails.length > 0) {
+        supabase
+          .from('email_history')
+          .select('*')
+          .in('email', emails)
+          .then(({ data }) => setEmailHistory(data || []))
+      }
+    }
+  }, [isOpen, investorGroup])
 
   const updateEmailState = (contactId: string, newState: Partial<EmailState>) => {
     setEmailStates(prev => {
@@ -432,6 +449,15 @@ export function InvestorDetailsSheet({ investors: investorGroup, isOpen, onClose
           title: "Email Sent Successfully", 
           description: `Email sent to ${sanitizeText(String(investor.contact_person))}${pin ? ` with PIN: ${pin}` : ''}` 
         });
+        // Save to email_history
+        if (investor.contact_person && investor.email) {
+          await supabase.from('email_history').insert([
+            {
+              contact_person: investor.contact_person,
+              email: investor.email
+            }
+          ]);
+        }
       } else {
         throw new Error(result.error || result.details || 'Failed to send email');
       }
@@ -494,13 +520,17 @@ export function InvestorDetailsSheet({ investors: investorGroup, isOpen, onClose
                     {investorGroup.map((investor, idx) => {
                       const cardKey = `${investor.id}-${investor.email || investor.contact_person || 'noid'}-${idx}`;
                       const contactId = sanitizeText(String(investor.contact_person)) || String(investor.email) || cardKey;
-                      
+                      // Check if this contact has a sent email in history
+                      const sent = emailHistory.some(h => h.email === investor.email && h.contact_person === investor.contact_person)
                       return (
                         <Card 
                           key={cardKey}
-                          className="cursor-pointer hover:shadow-md transition-shadow"
+                          className="cursor-pointer hover:shadow-md transition-shadow relative"
                           onClick={() => handleCardClick(investor)}
                         >
+                          {sent && (
+                            <Badge className="absolute top-2 right-2 bg-green-500 text-white z-10">Sent</Badge>
+                          )}
                           <CardHeader className="pb-3">
                             <CardTitle className="text-lg font-headline">
                               {sanitizeText(String(investor.contact_person))}
