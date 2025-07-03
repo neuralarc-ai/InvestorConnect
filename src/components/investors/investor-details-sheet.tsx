@@ -211,11 +211,11 @@ export function InvestorDetailsSheet({ investors: investorGroup, isOpen, onClose
   const primaryInvestor = investorGroup?.[0];
 
   useEffect(() => {
-    if (isOpen) {
-      setEmailStates(new Map())
-      setSelectedInvestor(null)
+    if (!isOpen) {
+      setEmailStates(new Map());
+      setSelectedInvestor(null);
     }
-  }, [isOpen, investorGroup])
+  }, [isOpen]);
 
   const updateEmailState = (contactId: string, newState: Partial<EmailState>) => {
     setEmailStates(prev => {
@@ -491,8 +491,8 @@ export function InvestorDetailsSheet({ investors: investorGroup, isOpen, onClose
                             </Card>
             
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {investorGroup.map((investor) => {
-                      const cardKey = investor.id ? String(investor.id) : `contact-${sanitizeText(String(investor.contact_person))}`;
+                    {investorGroup.map((investor, idx) => {
+                      const cardKey = `${investor.id}-${investor.email || investor.contact_person || 'noid'}-${idx}`;
                       const contactId = sanitizeText(String(investor.contact_person)) || String(investor.email) || cardKey;
                       
                       return (

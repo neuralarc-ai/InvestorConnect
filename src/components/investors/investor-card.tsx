@@ -47,7 +47,7 @@ export function InvestorCard({ investors, onSelect }: InvestorCardProps) {
   const investmentScoreValue = parseScore(primaryInvestor.investment_score);
 
   return (
-    <div className="relative card-hover-border">
+    <div className="relative">
       <Card
         onClick={onSelect}
         className="cursor-pointer transition-all w-80 min-h-[20rem] max-h-[20rem] flex flex-col bg-card p-4 shadow-sm border border-border rounded-xl"
