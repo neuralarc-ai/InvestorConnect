@@ -12,6 +12,7 @@ import { supabase } from "@/lib/supabaseClient"
 import { Filter } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import React from "react"
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 
 // Cleaner function to sanitize text for byte-sensitive areas
 function sanitizeText(input: string | undefined) {
@@ -114,51 +115,6 @@ export function InvestorDashboard() {
   const totalPages = Math.ceil(sortedGroups.length / pageSize)
   const paginatedGroups = sortedGroups.slice((currentPage - 1) * pageSize, currentPage * pageSize)
 
-  // --- DUMMY DATA SECTION ---
-  const [dummyInvestors, setDummyInvestors] = useState<any[]>([])
-  const [isDummyLoading, setIsDummyLoading] = useState(true)
-  const [dummyPage, setDummyPage] = useState(1)
-  const dummyPageSize = 20
-
-  useEffect(() => {
-    async function fetchDummy() {
-      setIsDummyLoading(true)
-      try {
-        const { data } = await supabase
-          .from('investorsdummy')
-          .select('*')
-          .order('created_at', { ascending: false })
-        setDummyInvestors(data || [])
-      } finally {
-        setIsDummyLoading(false)
-      }
-    }
-    fetchDummy()
-  }, [])
-
-  // Group dummy investors by investor_name
-  const groupedDummyInvestors = useMemo(() => {
-    const map = new Map()
-    dummyInvestors.forEach(inv => {
-      const key = (inv.investor_name || '').trim().toLowerCase()
-      if (!map.has(key)) map.set(key, [])
-      map.get(key).push(inv)
-    })
-    return Array.from(map.values())
-  }, [dummyInvestors])
-
-  // Search and paginate dummy investors (country filter only)
-  const filteredDummyGroups = useMemo(() => {
-    let groups = groupedDummyInvestors
-    if (countryFilter !== "All") {
-      groups = groups.filter(group => group[0].country === countryFilter)
-    }
-    return groups
-  }, [groupedDummyInvestors, countryFilter])
-
-  const dummyTotalPages = Math.ceil(filteredDummyGroups.length / dummyPageSize)
-  const paginatedDummyGroups = filteredDummyGroups.slice((dummyPage - 1) * dummyPageSize, dummyPage * dummyPageSize)
-
   // List view component
   function InvestorListView({ groups, onSelect }: { groups: Investor[][], onSelect: (group: Investor[]) => void }) {
     return (
@@ -198,43 +154,46 @@ export function InvestorDashboard() {
     <div className="flex flex-col min-h-screen">
       <Header searchQuery={""} setSearchQuery={() => {}} />
       <main className="flex-grow container mx-auto py-8 px-4">
-        {/* Filter Card (country only) */}
-        <div className="bg-[#FAF9F6] border border-[#ECECEC] rounded-2xl p-6 mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-6 shadow-sm">
-          <div className="flex items-center gap-2 mb-2">
-            <Filter className="h-5 w-5 text-muted-foreground" />
-            <span className="font-semibold text-lg">Filter Leads</span>
-          </div>
-          <div className="flex flex-row items-end gap-4 min-w-[300px]">
-            <label className="text-sm font-medium mb-1" style={{ minWidth: '70px' }}>Country:</label>
-            <select
-              className="w-64 rounded-lg border border-[#E0E0E0] bg-white px-3 py-2 text-sm"
-              value={countryFilter}
-              onChange={(e) => setCountryFilter(e.target.value)}
-            >
-              {uniqueCountries.map(c => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-          </div>
-          <div className="flex flex-col gap-2 min-w-[180px] items-end justify-end">
-            <div className="flex gap-2 mt-6 md:mt-0">
-              <Button
-                variant={view === 'card' ? 'default' : 'outline'}
-                onClick={() => setView('card')}
-                className="rounded-lg px-4"
-              >
-                Card View
-              </Button>
-              <Button
-                variant={view === 'list' ? 'default' : 'outline'}
-                onClick={() => setView('list')}
-                className="rounded-lg px-4"
-              >
-                List View
-              </Button>
+        {/* Filter Card (country only) - only show if there are investors */}
+        {groupedInvestors.length > 0 && (
+          <div className="bg-[#FAF9F6] border border-[#ECECEC] rounded-2xl p-6 mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-6 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <Filter className="h-5 w-5 text-muted-foreground" />
+              <span className="font-semibold text-lg">Filter Leads</span>
+            </div>
+            <div className="flex flex-row items-end gap-4 min-w-[300px]">
+              <label className="text-sm font-medium mb-1" style={{ minWidth: '70px' }}>Country:</label>
+              <Select value={countryFilter} onValueChange={setCountryFilter}>
+                <SelectTrigger className="w-64 rounded-lg border border-[#E0E0E0] bg-white px-3 py-2 text-sm">
+                  <SelectValue placeholder="All" />
+                </SelectTrigger>
+                <SelectContent>
+                  {uniqueCountries.map(c => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-2 min-w-[180px] items-end justify-end">
+              <div className="flex gap-2 mt-6 md:mt-0">
+                <Button
+                  variant={view === 'card' ? 'default' : 'outline'}
+                  onClick={() => setView('card')}
+                  className="rounded-lg px-4"
+                >
+                  Card View
+                </Button>
+                <Button
+                  variant={view === 'list' ? 'default' : 'outline'}
+                  onClick={() => setView('list')}
+                  className="rounded-lg px-4"
+                >
+                  List View
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
         {isLoading ? (
           <div className="w-full h-screen flex flex-col justify-center items-center">
             <p className="mb-2 text-lg font-medium">Loading {totalCount} records…</p>
@@ -279,40 +238,6 @@ export function InvestorDashboard() {
             <CsvUploader />
           </div>
         )}
-
-        {/* --- DUMMY DATA SECTION --- */}
-        <div className="mt-16">
-          <h2 className="text-2xl font-bold mb-4">Investors (Dummy Table)</h2>
-          {isDummyLoading ? (
-            <div className="w-full flex flex-col justify-center items-center">
-              <p className="mb-2 text-lg font-medium">Loading dummy investors…</p>
-            </div>
-          ) : paginatedDummyGroups.length > 0 ? (
-            <div className="w-full">
-              <div className="flex flex-wrap justify-center gap-6">
-                {paginatedDummyGroups.map((group, index) => (
-                  <InvestorCard
-                    key={`dummy-${group[0]?.investor_name?.toLowerCase().trim() || 'unknown'}-${index}`}
-                    investors={group}
-                    onSelect={() => setSelectedInvestorGroup(group)}
-                  />
-                ))}
-              </div>
-              {dummyTotalPages > 1 && (
-                <PaginationBar
-                  currentPage={dummyPage}
-                  totalPages={dummyTotalPages}
-                  onPageChange={setDummyPage}
-                  pageRange={10}
-                />
-              )}
-            </div>
-          ) : (
-            <div className="w-full text-center mx-auto mt-8">
-              <p className="text-muted-foreground">No dummy investors found.</p>
-            </div>
-          )}
-        </div>
       </main>
       <InvestorDetailsSheet
         investors={selectedInvestorGroup}

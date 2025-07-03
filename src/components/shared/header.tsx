@@ -37,7 +37,7 @@ export function Header({ searchQuery, setSearchQuery }: HeaderProps) {
 
   return (
     <>
-      <header className="sticky w-full overflow-visible top-0 z-30 flex h-fit items-center justify-between gap-4 bg-card border-b border-border shadow-md">
+      <header className="sticky w-full overflow-visible top-0 z-30 flex h-fit items-center justify-between gap-4 bg-card ">
         <div className="max-w-[1440px] mx-auto w-full flex h-14 items-center justify-center">
           <div className="flex items-center mr-8">
             <Rocket className="mr-2 h-6 w-6" />
