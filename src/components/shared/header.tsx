@@ -2,7 +2,6 @@
 
 import { useAuth } from "@/providers/auth-provider"
 import { Button } from "@/components/ui/button"
-import { ThemeToggle } from "@/components/shared/theme-toggle"
 import { LogOut, Rocket, Search, Plus, Building2, TrendingUp, History, X, Upload } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { AddInvestorDialog } from "@/components/investors/add-investor-dialog"
@@ -12,6 +11,7 @@ import { InvestorAnalysisDashboard } from "@/components/investors/investor-analy
 import { supabase } from "@/lib/supabaseClient"
 import Image from 'next/image'
 import { CsvUploader } from "@/components/investors/csv-uploader"
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip"
 
 interface HeaderProps {
   searchQuery: string
@@ -62,77 +62,112 @@ export function Header({ searchQuery, setSearchQuery }: HeaderProps) {
 
   return (
     <>
-      <header className="sticky w-full overflow-visible top-0 z-30 flex h-fit items-center justify-between gap-4 bg-[hsl(48,33%,98%)] ">
-        <div className="max-w-[1440px] mx-auto w-full flex h-14 items-center justify-center">
-          <div className="flex items-center mr-8">
-            <Image src="/F.png" alt="Logo" width={32} height={32} className="mr-2" />
+      <header className="sticky w-full overflow-visible top-0 z-30 flex h-fit items-center justify-between gap-4 bg-[hsl(48,33%,98%)] border-b border-[#E0E0E0] ">
+        <div className="w-full flex h-14 items-center mx-auto">
+          {/* Logo */}
+          <div className="flex items-center">
+            <Image src="/F.png" alt="Logo" width={50} height={50} className="ml-[6rem]" />
           </div>
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search by company name or contact person..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-lg bg-background pl-8 pr-8"
-            />
-            {searchQuery && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleClearSearch}
-                className="absolute right-1 top-1 h-8 w-8 text-muted-foreground hover:text-foreground"
-                aria-label="Clear search"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-          <div className="flex items-center space-x-2 ml-8">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => setIsAddInvestorOpen(true)}
-              aria-label="Add investor"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsCsvUploadOpen(true)}
-              aria-label="Upload CSV"
-            >
-              <Upload className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsCompanyDialogOpen(true)}
-              aria-label="Edit company profile"
-            >
-              <Building2 className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsAnalysisOpen(true)}
-              aria-label="View investor analysis"
-            >
-              <TrendingUp className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsHistoryOpen(true)}
-              aria-label="View email history"
-            >
-              <History className="h-4 w-4" />
-            </Button>
-            <ThemeToggle />
-            <Button variant="ghost" size="icon" onClick={logout} aria-label="Log out">
-              <LogOut className="h-4 w-4" />
-            </Button>
+          {/* Search Bar + Action Icons */}
+          <div className="flex items-center flex-1 justify-center gap-4">
+            <div className="relative w-full max-w-md">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search by company name or contact person..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full rounded-lg bg-background pl-8 pr-8"
+              />
+              {searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleClearSearch}
+                  className="absolute right-1 top-1 h-8 w-8 text-muted-foreground hover:text-foreground"
+                  aria-label="Clear search"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+            <TooltipProvider delayDuration={0}>
+              <div className="flex items-center space-x-2">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => setIsAddInvestorOpen(true)}
+                      aria-label="Add investor"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Add Investor</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setIsCsvUploadOpen(true)}
+                      aria-label="Upload CSV"
+                    >
+                      <Upload className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Upload CSV</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setIsCompanyDialogOpen(true)}
+                      aria-label="Edit company profile"
+                    >
+                      <Building2 className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Company Details</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setIsAnalysisOpen(true)}
+                      aria-label="View investor analysis"
+                    >
+                      <TrendingUp className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Top Investors</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setIsHistoryOpen(true)}
+                      aria-label="View email history"
+                    >
+                      <History className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Sent Emails</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" onClick={logout} aria-label="Log out">
+                      <LogOut className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Logout</TooltipContent>
+                </Tooltip>
+              </div>
+            </TooltipProvider>
           </div>
         </div>
       </header>

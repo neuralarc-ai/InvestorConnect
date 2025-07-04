@@ -203,15 +203,14 @@ export function InvestorDashboard() {
           </div>
         )}
         {isLoading ? (
-          <div className="w-full h-screen flex flex-col justify-center items-center">
-            <p className="mb-2 text-lg font-medium">Loading {totalCount} records…</p>
-            <div className="w-2/3 h-3 bg-gray-200 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-black dark:bg-white transition-all duration-200"
-                style={{ width: `${progress}%` }}
-              />
+          <div className="flex flex-col justify-center items-center mt-[20rem] gap-10">
+            <div className="cube-loader">
+              <div className="cube cube1"></div>
+              <div className="cube cube2"></div>
+              <div className="cube cube3"></div>
+              <div className="cube cube4"></div>
             </div>
-            <p className="text-sm mt-1">{progress}% complete</p>
+            <p className="text-sm mt-2">{progress}%</p>
           </div>
         ) : paginatedGroups.length > 0 ? (
           <div className="w-full">

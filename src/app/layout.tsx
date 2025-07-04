@@ -6,7 +6,7 @@ import { AuthProvider } from '@/providers/auth-provider';
 import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
-  title: '86F',
+  title: '86/f - Connect to Investor seamlessly',
   description: 'Connect with investors seamlessly.',
 };
 
@@ -26,7 +26,7 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthProvider>
-            <div className="max-w-[1440px] mx-auto w-full">
+            <div className="w-full">
               {children}
             </div>
             <Toaster />
