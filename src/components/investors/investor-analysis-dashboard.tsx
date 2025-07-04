@@ -70,6 +70,12 @@ export function InvestorAnalysisDashboard() {
     hasPrev: false
   })
 
+  // Track last batch processed for progressive analysis
+  const [lastBatchProcessed, setLastBatchProcessed] = useState(0)
+  const [totalBatches, setTotalBatches] = useState(0)
+  const BATCH_SIZE = 10
+  const NUM_BATCHES = 5
+
   // Investor details sheet state
   const [selectedGroup, setSelectedGroup] = useState<AnalysisData[] | null>(null)
   const [isDetailsSheetOpen, setIsDetailsSheetOpen] = useState(false)
@@ -190,37 +196,34 @@ export function InvestorAnalysisDashboard() {
   }
 
   // Trigger progressive analysis (multiple micro-batches)
-  const triggerProgressiveAnalysis = async (startBatch: number = 0, numBatches: number = 5) => {
+  const triggerProgressiveAnalysis = async () => {
     try {
       setRefreshing(true)
-      
       toast({
         title: "Starting Progressive Analysis",
-        description: `Processing ${numBatches} micro-batches starting from batch ${startBatch + 1}...`
+        description: `Processing ${NUM_BATCHES} micro-batches starting from batch ${lastBatchProcessed + 1}...`
       });
-
       const response = await fetch('/api/cron/analyze-investors-progressive', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          startBatch,
-          numBatches,
-          batchSize: 10,
+          startBatch: lastBatchProcessed,
+          numBatches: NUM_BATCHES,
+          batchSize: BATCH_SIZE,
           clearExisting: false,
           delayBetweenBatches: 500
         })
       })
-
       const data = await response.json()
-
       if (data.success) {
         const summary = data.summary;
         toast({
           title: "Progressive Analysis Complete",
           description: `Processed ${summary.totalProcessed} investors across ${summary.batchesProcessed} micro-batches. Found ${summary.totalTopRated} top-rated investors.`
         });
+        setLastBatchProcessed(lastBatchProcessed + NUM_BATCHES)
         fetchAnalysis() // Refresh the data
       } else {
         toast({
@@ -241,8 +244,22 @@ export function InvestorAnalysisDashboard() {
     }
   }
 
+  // Fetch total investor count and batches
+  const fetchBatchInfo = async () => {
+    try {
+      const response = await fetch(`/api/cron/analyze-investors-progressive?batch_size=${BATCH_SIZE}&num_batches=${NUM_BATCHES}`)
+      const data = await response.json()
+      if (data.success) {
+        setTotalBatches(data.data.totalBatches)
+      }
+    } catch (error) {
+      console.error('Error fetching batch info:', error)
+    }
+  }
+
   useEffect(() => {
     fetchAnalysis()
+    fetchBatchInfo()
   }, [])
 
   const getScoreColor = (score: number) => {
@@ -293,31 +310,15 @@ export function InvestorAnalysisDashboard() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button 
-            onClick={triggerAnalysis} 
-            disabled={refreshing}
+          <Button
+            onClick={triggerProgressiveAnalysis}
+            disabled={refreshing || lastBatchProcessed >= totalBatches}
+            variant={lastBatchProcessed >= totalBatches ? 'toggle-outline' : 'toggle'}
+            size="toggle"
             className="flex items-center gap-2"
           >
             <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-            {refreshing ? 'Running Analysis...' : 'Run Full Analysis'}
-          </Button>
-          <Button 
-            onClick={() => triggerBatchAnalysis(0)} 
-            disabled={refreshing}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-            {refreshing ? 'Running...' : 'Run Micro-Batch 1'}
-          </Button>
-          <Button 
-            onClick={() => triggerProgressiveAnalysis(0, 5)} 
-            disabled={refreshing}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-            {refreshing ? 'Running...' : 'Run 5 Micro-Batches'}
+            {refreshing ? 'Running...' : lastBatchProcessed >= totalBatches ? 'All Batches Complete' : 'Analyze-5 Batches'}
           </Button>
         </div>
       </div>

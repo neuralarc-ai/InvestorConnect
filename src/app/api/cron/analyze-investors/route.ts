@@ -39,22 +39,36 @@ export async function GET(request: NextRequest) {
 
     console.log(`📊 Found ${totalInvestors} total investors to analyze`);
 
-    // Step 2: Clear existing analysis data
-    console.log('🧹 Clearing existing analysis data...');
-    const { error: clearError } = await supabase
-      .from('investor_match_analysis')
-      .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all records
-
-    if (clearError) {
-      console.error('❌ Error clearing existing analysis:', clearError);
-      return NextResponse.json(
-        { error: 'Failed to clear existing analysis', details: clearError.message },
-        { status: 500 }
-      );
+    // Step 1.5: Get last batch processed from cron_progress
+    let lastBatchProcessed = 0;
+    const { data: progressData, error: progressError } = await supabase
+      .from('cron_progress')
+      .select('last_batch_processed')
+      .eq('id', 'investor_analysis')
+      .single();
+    if (progressData && typeof progressData.last_batch_processed === 'number') {
+      lastBatchProcessed = progressData.last_batch_processed;
     }
 
-    console.log('✅ Cleared existing analysis data');
+    // Step 2: Clear existing analysis data only if starting from batch 0
+    if (lastBatchProcessed === 0) {
+      console.log('🧹 Clearing existing analysis data...');
+      const { error: clearError } = await supabase
+        .from('investor_match_analysis')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all records
+
+      if (clearError) {
+        console.error('❌ Error clearing existing analysis:', clearError);
+        return NextResponse.json(
+          { error: 'Failed to clear existing analysis', details: clearError.message },
+          { status: 500 }
+        );
+      }
+      console.log('✅ Cleared existing analysis data');
+    } else {
+      console.log(`⏩ Resuming from batch ${lastBatchProcessed}`);
+    }
 
     // Step 3: Process investors in small batches of 10
     console.log('🔍 Starting micro-batch analysis...');
@@ -64,41 +78,47 @@ export async function GET(request: NextRequest) {
     let allAnalyses: InvestorMatchAnalysis[] = [];
     let processedCount = 0;
 
-    for (let batchNum = 0; batchNum < totalBatches; batchNum++) {
+    for (let batchNum = lastBatchProcessed; batchNum < totalBatches; batchNum++) {
       const from = batchNum * BATCH_SIZE;
       const to = from + BATCH_SIZE - 1;
-      
       console.log(`📦 Processing micro-batch ${batchNum + 1}/${totalBatches} (records ${from + 1}-${Math.min(to + 1, totalInvestors)})`);
-      
       // Fetch micro-batch of investors
       const { data: batchInvestors, error: batchError } = await supabase
         .from('investors')
         .select('*')
         .range(from, to)
         .order('id', { ascending: true });
-
       if (batchError) {
         console.error(`❌ Error fetching micro-batch ${batchNum + 1}:`, batchError);
         continue;
       }
-
       if (!batchInvestors || batchInvestors.length === 0) {
         console.log(`⚠️ No investors in micro-batch ${batchNum + 1}`);
         continue;
       }
-
       // Analyze this micro-batch
       const batchAnalyses = analyzer.analyzeAllInvestors(batchInvestors as Investor[]);
       allAnalyses = [...allAnalyses, ...batchAnalyses];
       processedCount += batchInvestors.length;
-
       console.log(`✅ Micro-batch ${batchNum + 1} complete. Processed ${batchInvestors.length} investors. Total processed: ${processedCount}/${totalInvestors}`);
-
+      // Update cron_progress after each batch
+      await supabase.from('cron_progress').upsert({
+        id: 'investor_analysis',
+        last_batch_processed: batchNum + 1,
+        updated_at: new Date().toISOString()
+      });
       // Longer delay between micro-batches to prevent overload
       if (batchNum < totalBatches - 1) {
         await new Promise(resolve => setTimeout(resolve, 500));
       }
     }
+
+    // After all batches, reset progress
+    await supabase.from('cron_progress').upsert({
+      id: 'investor_analysis',
+      last_batch_processed: 0,
+      updated_at: new Date().toISOString()
+    });
 
     console.log(`✅ Micro-batch analysis complete. Generated ${allAnalyses.length} analysis records`);
 
