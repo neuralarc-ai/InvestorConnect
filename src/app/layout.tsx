@@ -24,9 +24,9 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <ThemeProvider defaultTheme="light">
           <AuthProvider>
-            <div className="w-full">
+            <div className="w-full max-w-[1440px] mx-auto">
               {children}
             </div>
             <Toaster />

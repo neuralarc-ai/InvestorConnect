@@ -152,7 +152,7 @@ Neural Arc is not merely developing standalone tools. We are constructing the fo
 
 Please review our investor presentation and select a convenient time for a brief introductory call:
 	•	Investor Deck: https://pitch.neuralarc.ai (PIN: [PIN_PLACEHOLDER])
-	•	Schedule a Call: https://ceo.neurallink.ai/
+	•	Schedule a Call: https://ceo.neuralarc.ai/
 
 Thank you for your consideration. I look forward to our conversation.
 

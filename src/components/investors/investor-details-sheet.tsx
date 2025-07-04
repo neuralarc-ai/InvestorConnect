@@ -264,7 +264,33 @@ export function InvestorDetailsSheet({ investors: investorGroup, isOpen, onClose
     try {
       // Generate PIN first
       const pin = generatePin();
-      
+      const expires_at = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(); // 48 hours from now
+
+      // Store PIN in investor_pins table immediately after generation
+      if (investor.email && pin) {
+        try {
+          const response = await fetch('/api/store-pin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: investor.email, pin, expires_at })
+          });
+          const result = await response.json();
+          if (result.error) {
+            toast({
+              variant: "destructive",
+              title: "Failed to store PIN",
+              description: result.error || "Could not save PIN to pitch database."
+            });
+          }
+        } catch (error) {
+          toast({
+            variant: "destructive",
+            title: "Failed to store PIN",
+            description: (error as Error).message || "Could not save PIN to pitch database."
+          });
+        }
+      }
+
       const input: GeneratePersonalizedEmailInput = {
         Contact_Person: sanitizeText(String(investor.contact_person)),
         Designation: sanitizeText(String(investor.designation)) || 'a leader',
@@ -400,32 +426,6 @@ export function InvestorDetailsSheet({ investors: investorGroup, isOpen, onClose
         description: "This contact doesn't have an email address." 
       });
       return;
-    }
-
-    // If there's a PIN, save it to Supabase first
-    if (investor.email && pin) {
-      const expires_at = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(); // 48 hours from now
-      try {
-        const response = await fetch('/api/store-pin', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: investor.email, pin, expires_at })
-        });
-        const result = await response.json();
-        if (result.error) {
-          toast({
-            variant: "destructive",
-            title: "Failed to store PIN",
-            description: result.error || "Could not save PIN to pitch database."
-          });
-        }
-      } catch (error) {
-        toast({
-          variant: "destructive",
-          title: "Failed to store PIN",
-          description: (error as Error).message || "Could not save PIN to pitch database."
-        });
-      }
     }
 
     // Send email directly using our API

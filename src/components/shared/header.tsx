@@ -66,10 +66,10 @@ export function Header({ searchQuery, setSearchQuery }: HeaderProps) {
         <div className="w-full flex h-14 items-center mx-auto">
           {/* Logo */}
           <div className="flex items-center">
-            <Image src="/F.png" alt="Logo" width={50} height={50} className="ml-[6rem]" />
+            <Image src="/F.png" alt="Logo" width={50} height={50} className="ml-[3rem]" />
           </div>
-          {/* Search Bar + Action Icons */}
-          <div className="flex items-center flex-1 justify-center gap-4">
+          {/* Search Bar */}
+          <div className="flex-1 flex items-center justify-center gap-4">
             <div className="relative w-full max-w-md">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
@@ -91,82 +91,83 @@ export function Header({ searchQuery, setSearchQuery }: HeaderProps) {
                 </Button>
               )}
             </div>
+          </div>
+          {/* Icon Buttons - right aligned */}
+          <div className="flex items-center space-x-2 justify-end min-w-[260px] mr-[2rem]">
             <TooltipProvider delayDuration={0}>
-              <div className="flex items-center space-x-2">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={() => setIsAddInvestorOpen(true)}
-                      aria-label="Add investor"
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Add Investor</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setIsCsvUploadOpen(true)}
-                      aria-label="Upload CSV"
-                    >
-                      <Upload className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Upload CSV</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setIsCompanyDialogOpen(true)}
-                      aria-label="Edit company profile"
-                    >
-                      <Building2 className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Company Details</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setIsAnalysisOpen(true)}
-                      aria-label="View investor analysis"
-                    >
-                      <TrendingUp className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Top Investors</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setIsHistoryOpen(true)}
-                      aria-label="View email history"
-                    >
-                      <History className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Sent Emails</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" onClick={logout} aria-label="Log out">
-                      <LogOut className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Logout</TooltipContent>
-                </Tooltip>
-              </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => setIsAddInvestorOpen(true)}
+                    aria-label="Add investor"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Add Investor</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsCsvUploadOpen(true)}
+                    aria-label="Upload CSV"
+                  >
+                    <Upload className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Upload CSV</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsCompanyDialogOpen(true)}
+                    aria-label="Edit company profile"
+                  >
+                    <Building2 className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Company Details</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsAnalysisOpen(true)}
+                    aria-label="View investor analysis"
+                  >
+                    <TrendingUp className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Top Investors</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsHistoryOpen(true)}
+                    aria-label="View email history"
+                  >
+                    <History className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Sent Emails</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={logout} aria-label="Log out">
+                    <LogOut className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Logout</TooltipContent>
+              </Tooltip>
             </TooltipProvider>
           </div>
         </div>
