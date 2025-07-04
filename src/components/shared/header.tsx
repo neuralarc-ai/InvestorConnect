@@ -227,7 +227,7 @@ export function Header({ searchQuery, setSearchQuery }: HeaderProps) {
       {isHistoryOpen && (
         <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm">
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="w-full max-w-lg bg-background rounded-lg shadow-lg overflow-hidden">
+            <div className="w-full max-w-3xl bg-background rounded-lg shadow-lg overflow-hidden">
               <div className="flex items-center justify-between p-4 border-b">
                 <h2 className="text-xl font-semibold">Email History</h2>
                 <Button
