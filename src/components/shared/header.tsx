@@ -3,7 +3,7 @@
 import { useAuth } from "@/providers/auth-provider"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/shared/theme-toggle"
-import { LogOut, Rocket, Search, Plus, Building2, TrendingUp, History } from "lucide-react"
+import { LogOut, Rocket, Search, Plus, Building2, TrendingUp, History, X } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { AddInvestorDialog } from "@/components/investors/add-investor-dialog"
 import { useState, useEffect } from "react"
@@ -32,9 +32,31 @@ export function Header({ searchQuery, setSearchQuery }: HeaderProps) {
         .select('*')
         .order('sent_at', { ascending: false })
         .limit(50)
-        .then(({ data }) => setEmailHistory(data || []))
+        .then(async ({ data }) => {
+          if (!data) return setEmailHistory([])
+          // For records missing company_name, fetch from investors
+          const updated = await Promise.all(data.map(async (row) => {
+            if (row.company_name) return row
+            // Try to find company name by email
+            const { data: investorData } = await supabase
+              .from('investors')
+              .select('investor_name')
+              .eq('email', row.email)
+              .limit(1)
+              .single()
+            return {
+              ...row,
+              company_name: investorData?.investor_name || '-',
+            }
+          }))
+          setEmailHistory(updated)
+        })
     }
   }, [isHistoryOpen])
+
+  const handleClearSearch = () => {
+    setSearchQuery("")
+  }
 
   return (
     <>
@@ -47,11 +69,22 @@ export function Header({ searchQuery, setSearchQuery }: HeaderProps) {
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Search companies or contacts..."
+              placeholder="Search by company name or contact person..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-lg bg-background pl-8"
+              className="w-full rounded-lg bg-background pl-8 pr-8"
             />
+            {searchQuery && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleClearSearch}
+                className="absolute right-1 top-1 h-8 w-8 text-muted-foreground hover:text-foreground"
+                aria-label="Clear search"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
           </div>
           <div className="flex items-center space-x-2 ml-8">
             <Button 
@@ -146,6 +179,7 @@ export function Header({ searchQuery, setSearchQuery }: HeaderProps) {
                     <thead>
                       <tr>
                         <th className="px-4 py-2 text-left">Name</th>
+                        <th className="px-4 py-2 text-left">Company</th>
                         <th className="px-4 py-2 text-left">Email</th>
                         <th className="px-4 py-2 text-left">Sent At</th>
                       </tr>
@@ -154,6 +188,7 @@ export function Header({ searchQuery, setSearchQuery }: HeaderProps) {
                       {emailHistory.map((row, idx) => (
                         <tr key={row.id || idx} className="border-t">
                           <td className="px-4 py-2">{row.contact_person}</td>
+                          <td className="px-4 py-2">{row.company_name || '-'}</td>
                           <td className="px-4 py-2">{row.email}</td>
                           <td className="px-4 py-2">{row.sent_at ? new Date(row.sent_at).toLocaleString() : ''}</td>
                         </tr>

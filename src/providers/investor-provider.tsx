@@ -1,11 +1,12 @@
 "use client"
 
-import React, { createContext, useContext, useState, useEffect, type ReactNode } from "react"
+import React, { createContext, useContext, useState, useEffect, useMemo, type ReactNode } from "react"
 import type { Investor } from "@/lib/types"
 import { supabase } from "@/lib/supabaseClient"
 
 interface InvestorContextType {
   groupedInvestors: Investor[][]
+  filteredInvestors: Investor[][]
   totalGroups: number
   isLoading: boolean
   progress: number
@@ -14,6 +15,8 @@ interface InvestorContextType {
   setCurrentPage: React.Dispatch<React.SetStateAction<number>>
   pageSize: number
   setInvestors: React.Dispatch<React.SetStateAction<Investor[]>>
+  searchQuery: string
+  setSearchQuery: React.Dispatch<React.SetStateAction<string>>
 }
 
 const InvestorContext = createContext<InvestorContextType | undefined>(undefined)
@@ -38,8 +41,27 @@ export function InvestorProvider({ children }: { children: ReactNode }) {
   const [progress, setProgress] = useState(0)
   const [totalCount, setTotalCount] = useState(0)
   const [currentPage, setCurrentPage] = useState(1)
+  const [searchQuery, setSearchQuery] = useState("")
   const pageSize = PAGE_SIZE
   const [previewInvestors, setInvestors] = useState<Investor[]>([])
+
+  // Filter investors based on search query
+  const filteredInvestors = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return groupedInvestors
+    }
+    
+    const query = searchQuery.toLowerCase().trim()
+    return groupedInvestors.filter(group => {
+      const investor = group[0]
+      return (
+        (investor.investor_name?.toLowerCase().includes(query)) ||
+        (investor.contact_person?.toLowerCase().includes(query)) ||
+        (investor.designation?.toLowerCase().includes(query)) ||
+        (investor.country?.toLowerCase().includes(query))
+      )
+    })
+  }, [groupedInvestors, searchQuery])
 
   // Get total count from Supabase
   const getTotalCount = async () => {
@@ -87,8 +109,26 @@ export function InvestorProvider({ children }: { children: ReactNode }) {
     })()
   }, [])
 
+  // Reset to first page when search query changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery])
+
   return (
-    <InvestorContext.Provider value={{ groupedInvestors, totalGroups, isLoading, progress, totalCount, currentPage, setCurrentPage, pageSize, setInvestors }}>
+    <InvestorContext.Provider value={{ 
+      groupedInvestors, 
+      filteredInvestors,
+      totalGroups, 
+      isLoading, 
+      progress, 
+      totalCount, 
+      currentPage, 
+      setCurrentPage, 
+      pageSize, 
+      setInvestors,
+      searchQuery,
+      setSearchQuery
+    }}>
       {children}
     </InvestorContext.Provider>
   )

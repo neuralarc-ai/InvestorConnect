@@ -83,7 +83,7 @@ function PaginationBar({ currentPage, totalPages, onPageChange, pageRange = 10 }
 }
 
 export function InvestorDashboard() {
-  const { groupedInvestors, totalGroups, isLoading, progress, totalCount, currentPage, setCurrentPage, pageSize } = useInvestors()
+  const { filteredInvestors, totalGroups, isLoading, progress, totalCount, currentPage, setCurrentPage, pageSize, searchQuery, setSearchQuery } = useInvestors()
   const [selectedInvestorGroup, setSelectedInvestorGroup] = useState<Investor[] | null>(null)
   const [countryFilter, setCountryFilter] = useState<string>("All")
   const [view, setView] = useState<'card' | 'list'>("card")
@@ -91,21 +91,21 @@ export function InvestorDashboard() {
   // Get unique countries for dropdown
   const uniqueCountries = useMemo(() => {
     const set = new Set<string>()
-    groupedInvestors.forEach(group => {
+    filteredInvestors.forEach(group => {
       const inv = group[0]
       if (inv.country) set.add(inv.country)
     })
     return ["All", ...Array.from(set).sort()]
-  }, [groupedInvestors])
+  }, [filteredInvestors])
 
   // Filtering logic (only by country)
   const filteredGroups = useMemo(() => {
-    let groups = groupedInvestors
+    let groups = filteredInvestors
     if (countryFilter !== "All") {
       groups = groups.filter(group => group[0].country === countryFilter)
     }
     return groups
-  }, [groupedInvestors, countryFilter])
+  }, [filteredInvestors, countryFilter])
 
   const sortedGroups = useMemo(() => {
     return [...filteredGroups].sort((a, b) =>
@@ -152,14 +152,19 @@ export function InvestorDashboard() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Header searchQuery={""} setSearchQuery={() => {}} />
+      <Header searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
       <main className="flex-grow container mx-auto py-8 px-4">
         {/* Filter Card (country only) - only show if there are investors */}
-        {groupedInvestors.length > 0 && (
+        {filteredInvestors.length > 0 && (
           <div className="rounded-2xl p-6 mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-6 ">
             <div className="flex items-center gap-2 mb-2">
               <Filter className="h-5 w-5 text-muted-foreground" />
               <span className="font-semibold text-lg">Filter Leads</span>
+              {searchQuery && (
+                <span className="text-sm text-muted-foreground">
+                  ({filteredInvestors.length} results for "{searchQuery}")
+                </span>
+              )}
             </div>
             <div className="flex flex-row items-end gap-4 min-w-[300px]">
               <label className="text-sm font-medium mb-1" style={{ minWidth: '70px' }}>Country:</label>
@@ -230,13 +235,19 @@ export function InvestorDashboard() {
             )}
           </div>
         ) : (
-          <div className="w-full max-w-2xl text-center mx-auto mt-16">
-            <h2 className="text-3xl font-bold font-headline mb-4">Welcome to 86F</h2>
-            <p className="text-muted-foreground mb-8 max-w-lg mx-auto">
-              Get started by uploading your investor list. Drag and drop a CSV file below or click to select one.
-            </p>
-            <CsvUploader />
-          </div>
+          searchQuery ? (
+            <div className="w-full max-w-2xl text-center mx-auto mt-16">
+              <h2 className="text-2xl font-semibold text-muted-foreground">No company found</h2>
+            </div>
+          ) : (
+            <div className="w-full max-w-2xl text-center mx-auto mt-16">
+              <h2 className="text-3xl font-bold font-headline mb-4">Welcome to 86F</h2>
+              <p className="text-muted-foreground mb-8 max-w-lg mx-auto">
+                Get started by uploading your investor list. Drag and drop a CSV file below or click to select one.
+              </p>
+              <CsvUploader />
+            </div>
+          )
         )}
       </main>
       <InvestorDetailsSheet
