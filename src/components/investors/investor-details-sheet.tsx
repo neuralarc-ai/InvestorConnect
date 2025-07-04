@@ -19,6 +19,7 @@ interface InvestorDetailsSheetProps {
   investors: Investor[] | null
   isOpen: boolean
   onClose: () => void
+  deduplicateContacts?: boolean // Add this prop
 }
 
 // Cleaner function to sanitize text for byte-sensitive areas
@@ -205,13 +206,27 @@ function InvestorDialog({
   );
 }
 
-export function InvestorDetailsSheet({ investors: investorGroup, isOpen, onClose }: InvestorDetailsSheetProps) {
+export function InvestorDetailsSheet({ investors: investorGroup, isOpen, onClose, deduplicateContacts = false }: InvestorDetailsSheetProps) {
   const [emailStates, setEmailStates] = useState<Map<string, EmailState>>(new Map())
   const [selectedInvestor, setSelectedInvestor] = useState<Investor | null>(null)
   const { toast } = useToast()
   const [emailHistory, setEmailHistory] = useState<any[]>([])
 
-  const primaryInvestor = investorGroup?.[0];
+  // Deduplicate contacts if requested (for match analysis dashboard)
+  const contactsToShow = investorGroup
+    ? deduplicateContacts
+      ? Array.from(
+          new Map(
+            investorGroup.map(inv => [
+              `${inv.contact_person?.toLowerCase().trim()}|${inv.email?.toLowerCase().trim()}`,
+              inv
+            ])
+          ).values()
+        )
+      : investorGroup
+    : [];
+
+  const primaryInvestor = contactsToShow?.[0];
 
   useEffect(() => {
     if (!isOpen) {
@@ -494,11 +509,11 @@ export function InvestorDetailsSheet({ investors: investorGroup, isOpen, onClose
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent className="w-full sm:max-w-4xl p-0">
         <ScrollArea className="h-full">
-          {primaryInvestor && investorGroup && (
+          {primaryInvestor && contactsToShow && (
             <>
               <SheetHeader className="p-6">
                   <SheetTitle className="font-headline text-2xl">{sanitizeText(String(primaryInvestor.investor_name))}</SheetTitle>
-                <SheetDescription>{investorGroup.length} contact{investorGroup.length > 1 ? 's' : ''} found at this firm.</SheetDescription>
+                <SheetDescription>{contactsToShow.length} contact{contactsToShow.length > 1 ? 's' : ''} found at this firm.</SheetDescription>
               </SheetHeader>
               <Separator />
               <div className="p-6">
@@ -517,7 +532,7 @@ export function InvestorDetailsSheet({ investors: investorGroup, isOpen, onClose
                             </Card>
             
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {investorGroup.map((investor, idx) => {
+                    {contactsToShow.map((investor, idx) => {
                       const cardKey = `${investor.id}-${investor.email || investor.contact_person || 'noid'}-${idx}`;
                       const contactId = sanitizeText(String(investor.contact_person)) || String(investor.email) || cardKey;
                       // Check if this contact has a sent email in history

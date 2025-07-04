@@ -90,9 +90,12 @@ export async function generatePersonalizedEmail(
   try {
     console.log('Original input:', JSON.stringify(input, null, 2));
     
+    // Extract first name from Contact_Person
+    const firstName = input.Contact_Person?.split(' ')[0] || input.Contact_Person || '';
+    
     // Sanitize all input fields to prevent character encoding issues
     const sanitizedInput = {
-      Contact_Person: sanitizeText(input.Contact_Person || ''),
+      Contact_Person: sanitizeText(firstName), // Use only first name
       Designation: sanitizeText(input.Designation || ''),
       Investor_Name: sanitizeText(input.Investor_Name || ''),
       Location: sanitizeText(input.Location || ''),
@@ -149,13 +152,13 @@ Neural Arc is not merely developing standalone tools. We are constructing the fo
 
 Please review our investor presentation and select a convenient time for a brief introductory call:
 	•	Investor Deck: https://pitch.neuralarc.ai (PIN: [PIN_PLACEHOLDER])
-	•	Schedule a Call: https://meet.neuralarc.ai/
+	•	Schedule a Call: https://ceo.neurallink.ai/
 
 Thank you for your consideration. I look forward to our conversation.
 
 Kind regards,
-Aniket Tapre
-Founder and Chief Executive Officer, Neural Arc
+Nyra
+Neural Intelligence Officer, Neural Arc
 
 Important: Do not use any contractions. Write out full forms (do not, cannot, will not, I am, you are, it is, they are, we are). Use proper formal business English throughout.`)),
 });

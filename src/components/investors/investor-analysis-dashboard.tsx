@@ -22,6 +22,7 @@ import {
   MapPin,
   Target
 } from "lucide-react"
+import { supabase } from "@/lib/supabaseClient"
 
 interface AnalysisData {
   id: string
@@ -74,7 +75,7 @@ export function InvestorAnalysisDashboard() {
   const [lastBatchProcessed, setLastBatchProcessed] = useState(0)
   const [totalBatches, setTotalBatches] = useState(0)
   const BATCH_SIZE = 10
-  const NUM_BATCHES = 5
+  const NUM_BATCHES = 10
 
   // Investor details sheet state
   const [selectedGroup, setSelectedGroup] = useState<AnalysisData[] | null>(null)
@@ -288,9 +289,22 @@ export function InvestorAnalysisDashboard() {
   }, [analyses]);
 
   // Handle card click to open investor details
-  const handleCardClick = (group: AnalysisData[]) => {
-    setSelectedGroup(group);
-    setIsDetailsSheetOpen(true);
+  const handleCardClick = async (group: AnalysisData[]) => {
+    // Fetch full investor info for each contact in the group
+    const ids = group.map(a => a.investor_id).filter(Boolean)
+    const { data: fullInvestors, error } = await supabase
+      .from('investors')
+      .select('*')
+      .in('id', ids)
+    if (error) {
+      setSelectedGroup([])
+      setIsDetailsSheetOpen(true)
+      return
+    }
+    // Map to preserve order and fill missing with partial
+    const fullGroup = group.map(a => fullInvestors?.find(inv => inv.id === a.investor_id) || a.investor)
+    setSelectedGroup(fullGroup)
+    setIsDetailsSheetOpen(true)
   }
 
   // Handle closing the details sheet
@@ -318,7 +332,7 @@ export function InvestorAnalysisDashboard() {
             className="flex items-center gap-2"
           >
             <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-            {refreshing ? 'Running...' : lastBatchProcessed >= totalBatches ? 'All Batches Complete' : 'Analyze-5 Batches'}
+            {refreshing ? 'Running...' : lastBatchProcessed >= totalBatches ? 'All Batches Complete' : 'Analyze-10 Batches'}
           </Button>
         </div>
       </div>
@@ -339,6 +353,8 @@ export function InvestorAnalysisDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {groupedAnalyses.map((group) => {
             const main = group[0];
+            // Get all unique contact names for this group
+            const contactNames = Array.from(new Set(group.map(a => a.investor.contact_person).filter(Boolean)));
             return (
               <Card
                 key={main.investor.investor_name}
@@ -359,10 +375,7 @@ export function InvestorAnalysisDashboard() {
                     <div className="space-y-2 mb-4">
                       <div className="flex items-center gap-2">
                         <Users className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                        <span className="text-sm line-clamp-1">{main.investor.contact_person}</span>
-                        {group.length > 1 && (
-                          <span className="ml-2 text-xs text-muted-foreground">+{group.length - 1} more contact{group.length > 2 ? 's' : ''}</span>
-                        )}
+                        <span className="text-sm line-clamp-1">{contactNames.slice(0, 2).join(', ')}{contactNames.length > 2 ? `, +${contactNames.length - 2} more` : ''}</span>
                       </div>
                       {main.investor.designation && (
                         <div className="flex items-center gap-2">
@@ -418,9 +431,10 @@ export function InvestorAnalysisDashboard() {
       {/* Investor Details Sheet */}
       {selectedGroup && (
         <InvestorDetailsSheet
-          investors={selectedGroup.map(a => a.investor)}
+          investors={selectedGroup}
           isOpen={isDetailsSheetOpen}
           onClose={handleCloseDetailsSheet}
+          deduplicateContacts={true}
         />
       )}
     </div>
