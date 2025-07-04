@@ -3,7 +3,7 @@
 import { useAuth } from "@/providers/auth-provider"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/shared/theme-toggle"
-import { LogOut, Rocket, Search, Plus, Building2, TrendingUp, History, X } from "lucide-react"
+import { LogOut, Rocket, Search, Plus, Building2, TrendingUp, History, X, Upload } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { AddInvestorDialog } from "@/components/investors/add-investor-dialog"
 import { useState, useEffect } from "react"
@@ -11,6 +11,7 @@ import CompanyProfileDialog from "@/components/CompanyProfileDialog"
 import { InvestorAnalysisDashboard } from "@/components/investors/investor-analysis-dashboard"
 import { supabase } from "@/lib/supabaseClient"
 import Image from 'next/image'
+import { CsvUploader } from "@/components/investors/csv-uploader"
 
 interface HeaderProps {
   searchQuery: string
@@ -20,6 +21,7 @@ interface HeaderProps {
 export function Header({ searchQuery, setSearchQuery }: HeaderProps) {
   const { logout } = useAuth()
   const [isAddInvestorOpen, setIsAddInvestorOpen] = useState(false)
+  const [isCsvUploadOpen, setIsCsvUploadOpen] = useState(false)
   const [isCompanyDialogOpen, setIsCompanyDialogOpen] = useState(false)
   const [isAnalysisOpen, setIsAnalysisOpen] = useState(false)
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
@@ -98,6 +100,14 @@ export function Header({ searchQuery, setSearchQuery }: HeaderProps) {
             <Button
               variant="ghost"
               size="icon"
+              onClick={() => setIsCsvUploadOpen(true)}
+              aria-label="Upload CSV"
+            >
+              <Upload className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => setIsCompanyDialogOpen(true)}
               aria-label="Edit company profile"
             >
@@ -131,6 +141,28 @@ export function Header({ searchQuery, setSearchQuery }: HeaderProps) {
         isOpen={isAddInvestorOpen} 
         onClose={() => setIsAddInvestorOpen(false)} 
       />
+      {isCsvUploadOpen && (
+        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="w-full max-w-lg bg-background rounded-lg shadow-lg overflow-hidden">
+              <div className="flex items-center justify-between p-4 border-b">
+                <h2 className="text-xl font-semibold">Upload Investors CSV</h2>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsCsvUploadOpen(false)}
+                  aria-label="Close CSV Upload"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="p-4">
+                <CsvUploader />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       <CompanyProfileDialog
         open={isCompanyDialogOpen}
         onOpenChange={setIsCompanyDialogOpen}

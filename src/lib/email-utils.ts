@@ -89,8 +89,8 @@ async function sendEmail(email: string, pin: string): Promise<void> {
         <p style="margin: 0 0 16px 0;">Thank you for your consideration. I look forward to our conversation.</p>
         
         <p style="margin: 16px 0 8px 0;"><strong>Kind regards,</strong></p>
-        <p style="margin: 4px 0; color: #666;">Aniket Tapre</p>
-        <p style="margin: 4px 0; color: #666;">Founder and Chief Executive Officer, Neural Arc</p>
+        <p style="margin: 4px 0; color: #666;">Nyra</p>
+        <p style="margin: 4px 0; color: #666;">Neural Intelligence Officer, Neural Arc</p>
       </div>
     `,
     text: `
@@ -113,8 +113,8 @@ Please review our investor presentation and select a convenient time for a brief
 Thank you for your consideration. I look forward to our conversation.
 
 Kind regards,
-Aniket Tapre
-Founder and Chief Executive Officer, Neural Arc
+Nyra
+Neural Intelligence Officer, Neural Arc
     `,
   }
 
