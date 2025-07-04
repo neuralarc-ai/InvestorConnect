@@ -56,20 +56,23 @@ function PaginationBar({ currentPage, totalPages, onPageChange, pageRange = 10 }
     <div className="flex items-center justify-center gap-2 mt-8">
       <Button onClick={() => onPageChange(currentPage - 1)} disabled={currentPage === 1} variant="outline">Previous</Button>
       <div className="flex gap-1">
-        {pages.map(page => (
-          <button
-            key={page}
-            onClick={() => onPageChange(page)}
-            className={`w-9 h-9 rounded-lg border text-sm font-medium transition-colors ${page === currentPage ? 'bg-black text-white border-black' : 'bg-white text-black border-gray-300 hover:bg-gray-100'}`}
-            aria-current={page === currentPage ? 'page' : undefined}
-          >
-            {page}
-          </button>
-        ))}
+        {Array.from({ length: endPage - startPage + 1 }, (_, i) => {
+          const page = startPage + i;
+          return (
+            <button
+              key={page}
+              onClick={() => onPageChange(page)}
+              className={`text-sm font-medium transition-colors ${page === currentPage ? 'bg-[#2B2521] text-white border border-[#2B2521] rounded-[4px] py-4 px-[27px]' : 'border border-[#2B2521] text-black bg-transparent hover:bg-[#2B2521]/10 rounded-[4px] py-4 px-[27px]'}`}
+              aria-current={page === currentPage ? 'page' : undefined}
+            >
+              {page}
+            </button>
+          );
+        })}
         {endPage < totalPages && (
           <button
             onClick={() => onPageChange(endPage + 1)}
-            className="w-9 h-9 rounded-lg border bg-white text-black border-gray-300 hover:bg-gray-100"
+            className="border border-[#2B2521] text-black bg-transparent hover:bg-[#2B2521]/10 rounded-[4px] py-4 px-[27px] text-sm font-medium transition-colors"
             aria-label="Next page range"
           >
             ...
@@ -182,16 +185,16 @@ export function InvestorDashboard() {
             <div className="flex flex-col gap-2 min-w-[180px] items-end justify-end">
               <div className="flex gap-2 mt-6 md:mt-0">
                 <Button
-                  variant={view === 'card' ? 'default' : 'outline'}
+                  variant={view === 'card' ? 'toggle' : 'toggle-outline'}
+                  size="toggle"
                   onClick={() => setView('card')}
-                  className="rounded-lg px-4"
                 >
                   Card View
                 </Button>
                 <Button
-                  variant={view === 'list' ? 'default' : 'outline'}
+                  variant={view === 'list' ? 'toggle' : 'toggle-outline'}
+                  size="toggle"
                   onClick={() => setView('list')}
-                  className="rounded-lg px-4"
                 >
                   List View
                 </Button>
