@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, useState, useEffect, useMemo, type ReactNode } from "react"
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, type ReactNode } from "react"
 import type { Investor } from "@/lib/types"
 import { supabase } from "@/lib/supabaseClient"
 
@@ -17,6 +17,7 @@ interface InvestorContextType {
   setInvestors: React.Dispatch<React.SetStateAction<Investor[]>>
   searchQuery: string
   setSearchQuery: React.Dispatch<React.SetStateAction<string>>
+  refreshInvestors: () => Promise<void>
 }
 
 const InvestorContext = createContext<InvestorContextType | undefined>(undefined)
@@ -99,15 +100,18 @@ export function InvestorProvider({ children }: { children: ReactNode }) {
     return allData
   }
 
-  useEffect(() => {
-    (async () => {
-      const records = await fetchAllBatches()
-      const grouped = groupByCompany(records)
-      setGroupedInvestors(grouped)
-      setTotalGroups(grouped.length)
-      setIsLoading(false)
-    })()
+  // Refresh investors function
+  const refreshInvestors = useCallback(async () => {
+    const records = await fetchAllBatches()
+    const grouped = groupByCompany(records)
+    setGroupedInvestors(grouped)
+    setTotalGroups(grouped.length)
+    setIsLoading(false)
   }, [])
+
+  useEffect(() => {
+    refreshInvestors()
+  }, [refreshInvestors])
 
   // Reset to first page when search query changes
   useEffect(() => {
@@ -127,7 +131,8 @@ export function InvestorProvider({ children }: { children: ReactNode }) {
       pageSize, 
       setInvestors,
       searchQuery,
-      setSearchQuery
+      setSearchQuery,
+      refreshInvestors
     }}>
       {children}
     </InvestorContext.Provider>

@@ -19,7 +19,7 @@ interface AddInvestorDialogProps {
 }
 
 export function AddInvestorDialog({ isOpen, onClose }: AddInvestorDialogProps) {
-  const { setInvestors } = useInvestors()
+  const { setInvestors, refreshInvestors } = useInvestors()
   const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -80,25 +80,24 @@ export function AddInvestorDialog({ isOpen, onClose }: AddInvestorDialogProps) {
     twitter?: string,
     facebook?: string
   }) {
-    console.log('Attempting to insert investor:', fields);
+    console.log('Attempting to insert investor via API:', fields);
     
-    const { data, error } = await supabase
-      .from('investors')
-      .insert([fields])
-      .select();
+    const response = await fetch('/api/add-investor', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(fields),
+    });
     
-    console.log('Supabase response:', { data, error });
+    const result = await response.json();
+    console.log('API response:', result);
     
-    if (error) {
-      console.error('Detailed error:', {
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-        code: error.code
-      });
+    if (!response.ok) {
+      return { data: null, error: { message: result.error || 'Failed to add investor' } };
     }
     
-    return { data, error };
+    return { data: result.data, error: null };
   }
 
   const handleSubmit = async () => {
@@ -112,36 +111,6 @@ export function AddInvestorDialog({ isOpen, onClose }: AddInvestorDialogProps) {
     }
 
     setIsSubmitting(true)
-
-    // Test database connection first
-    try {
-      const { data: testData, error: testError } = await supabase
-        .from('investors')
-        .select('count')
-        .limit(1);
-      
-      console.log('Database connection test:', { testData, testError });
-      
-      if (testError) {
-        console.error('Database connection failed:', testError);
-        toast({
-          variant: "destructive",
-          title: "Database Connection Error",
-          description: `Cannot connect to database: ${testError.message}`
-        });
-        setIsSubmitting(false);
-        return;
-      }
-    } catch (connectionError) {
-      console.error('Connection test failed:', connectionError);
-      toast({
-        variant: "destructive",
-        title: "Connection Error",
-        description: "Failed to connect to database. Please check your connection."
-      });
-      setIsSubmitting(false);
-      return;
-    }
 
     try {
       // Create investor object with only non-empty values
@@ -203,6 +172,9 @@ export function AddInvestorDialog({ isOpen, onClose }: AddInvestorDialogProps) {
         title: "Investor Added Successfully",
         description: `${newInvestor.investor_name} has been added to your investor list.`
       });
+
+      // Refresh the investor list to show the new investor
+      await refreshInvestors();
 
       setFormData({
         investor_name: "",
