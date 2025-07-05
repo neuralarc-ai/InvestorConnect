@@ -76,6 +76,7 @@ function DetailLinkItem({ icon: Icon, label, value }: { icon: React.ElementType,
 type EmailState = {
   isLoading: boolean;
   content: string;
+  plainText: string;
   pin?: string;
 }
 
@@ -168,12 +169,15 @@ function InvestorDialog({
                       </p>
                     </div>
                   )}
-                  
                   <div className="mt-4">
                     <div className="font-semibold mb-2">Preview:</div>
-                    <div className="border rounded p-4 bg-white">
-                      <div className="fustat-variable" dangerouslySetInnerHTML={{ __html: emailState.content }} />
-                    </div>
+                    <Textarea
+                      className="w-full min-h-[200px] resize-vertical bg-transparent border-none shadow-none focus:outline-none focus:ring-0 p-0 text-base font-sans"
+                      aria-label="Editable email preview"
+                      value={emailState.plainText || emailState.content.replace(/<[^>]*>/g, '')}
+                      onChange={e => onTextChange(contactId, e.target.value)}
+                      spellCheck={true}
+                    />
                   </div>
                   <div className="flex gap-2">
                     <Button 
@@ -252,7 +256,7 @@ export function InvestorDetailsSheet({ investors: investorGroup, isOpen, onClose
   const updateEmailState = (contactId: string, newState: Partial<EmailState>) => {
     setEmailStates(prev => {
       const newMap = new Map(prev)
-      const currentState = newMap.get(contactId) || { isLoading: false, content: '' }
+      const currentState = newMap.get(contactId) || { isLoading: false, content: '', plainText: '' }
       newMap.set(contactId, { ...currentState, ...newState })
       return newMap
     })
@@ -400,10 +404,10 @@ export function InvestorDetailsSheet({ investors: investorGroup, isOpen, onClose
         .join('');
       
       const emailWithPitchAccess = emailHtml;
-
+      const plainTextEmail = emailWithPin; // Keep the original plain text version
 
       
-      updateEmailState(contactId, { content: emailWithPitchAccess, pin })
+      updateEmailState(contactId, { content: emailWithPitchAccess, plainText: plainTextEmail, pin })
       
       toast({ title: "Email Generated", description: `Personalized email for ${contactId} is ready with PIN: ${pin}` })
     } catch (error) {
@@ -493,7 +497,7 @@ export function InvestorDetailsSheet({ investors: investorGroup, isOpen, onClose
   }
 
   const handleTextChange = (contactId: string, value: string) => {
-    updateEmailState(contactId, { content: value });
+    updateEmailState(contactId, { content: value, plainText: value });
   }
 
   const handleCardClick = (investor: Investor) => {
@@ -593,7 +597,7 @@ export function InvestorDetailsSheet({ investors: investorGroup, isOpen, onClose
           investor={selectedInvestor}
           isOpen={!!selectedInvestor}
           onClose={handleDialogClose}
-          emailState={emailStates.get(sanitizeText(String(selectedInvestor.contact_person))) || { isLoading: false, content: '' }}
+          emailState={emailStates.get(sanitizeText(String(selectedInvestor.contact_person))) || { isLoading: false, content: '', plainText: '' }}
           onGenerateEmail={(inv) => handleGenerateEmail(inv, sanitizeText(String(inv.contact_person)) || String(inv.email) || String(inv.id) || 'contact-fallback')}
           onSendEmail={handleSendEmail}
           onCopyToClipboard={handleCopyToClipboard}

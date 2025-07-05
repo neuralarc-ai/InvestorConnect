@@ -23,6 +23,12 @@ export function AddInvestorDialog({ isOpen, onClose }: AddInvestorDialogProps) {
   const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  // Check Supabase configuration on component mount
+  useEffect(() => {
+    console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
+    console.log('Supabase Key exists:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  }, []);
+
   useEffect(() => {
     const stored = sessionStorage.getItem("investors");
     if (stored) {
@@ -45,7 +51,10 @@ export function AddInvestorDialog({ isOpen, onClose }: AddInvestorDialogProps) {
     company_linkedin: "",
     twitter: "",
     facebook: "",
-    country: ""
+    country: "",
+    state: "",
+    city: "",
+    location: ""
   })
 
   const handleInputChange = (field: string, value: string) => {
@@ -55,23 +64,40 @@ export function AddInvestorDialog({ isOpen, onClose }: AddInvestorDialogProps) {
     }))
   }
 
-  async function addInvestorDummy(fields: {
+  async function addInvestor(fields: {
     investor_name: string,
     contact_person: string,
     designation?: string,
     country?: string,
+    state?: string,
+    city?: string,
+    location?: string,
     email?: string,
     phone?: string,
     website?: string,
-    personal_linkedin?: string,
+    linkedin?: string,
     company_linkedin?: string,
     twitter?: string,
     facebook?: string
   }) {
+    console.log('Attempting to insert investor:', fields);
+    
     const { data, error } = await supabase
-      .from('investorsdummy')
+      .from('investors')
       .insert([fields])
       .select();
+    
+    console.log('Supabase response:', { data, error });
+    
+    if (error) {
+      console.error('Detailed error:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
+    }
+    
     return { data, error };
   }
 
@@ -87,29 +113,78 @@ export function AddInvestorDialog({ isOpen, onClose }: AddInvestorDialogProps) {
 
     setIsSubmitting(true)
 
+    // Test database connection first
     try {
-      const newInvestor = {
-        investor_name: formData.investor_name.trim(),
-        contact_person: formData.contact_person.trim(),
-        designation: formData.designation.trim() || undefined,
-        country: formData.country.trim() || undefined,
-        email: formData.email.trim() || undefined,
-        phone: formData.phone.trim() || undefined,
-        website: formData.website.trim() || undefined,
-        personal_linkedin: formData.linkedin.trim() || undefined,
-        company_linkedin: formData.company_linkedin.trim() || undefined,
-        twitter: formData.twitter.trim() || undefined,
-        facebook: formData.facebook.trim() || undefined
-      };
+      const { data: testData, error: testError } = await supabase
+        .from('investors')
+        .select('count')
+        .limit(1);
+      
+      console.log('Database connection test:', { testData, testError });
+      
+      if (testError) {
+        console.error('Database connection failed:', testError);
+        toast({
+          variant: "destructive",
+          title: "Database Connection Error",
+          description: `Cannot connect to database: ${testError.message}`
+        });
+        setIsSubmitting(false);
+        return;
+      }
+    } catch (connectionError) {
+      console.error('Connection test failed:', connectionError);
+      toast({
+        variant: "destructive",
+        title: "Connection Error",
+        description: "Failed to connect to database. Please check your connection."
+      });
+      setIsSubmitting(false);
+      return;
+    }
 
-      const { error, data } = await addInvestorDummy(newInvestor);
+    try {
+      // Create investor object with only non-empty values
+      const newInvestor: any = {
+        investor_name: formData.investor_name.trim(),
+        contact_person: formData.contact_person.trim()
+      };
+      
+      // Only add fields that have values
+      if (formData.designation.trim()) newInvestor.designation = formData.designation.trim();
+      if (formData.country.trim()) newInvestor.country = formData.country.trim();
+      if (formData.state.trim()) newInvestor.state = formData.state.trim();
+      if (formData.city.trim()) newInvestor.city = formData.city.trim();
+      if (formData.location.trim()) newInvestor.location = formData.location.trim();
+      if (formData.email.trim()) newInvestor.email = formData.email.trim();
+      if (formData.phone.trim()) newInvestor.phone = formData.phone.trim();
+      if (formData.website.trim()) newInvestor.website = formData.website.trim();
+      if (formData.linkedin.trim()) newInvestor.linkedin = formData.linkedin.trim();
+      if (formData.company_linkedin.trim()) newInvestor.company_linkedin = formData.company_linkedin.trim();
+      if (formData.twitter.trim()) newInvestor.twitter = formData.twitter.trim();
+      if (formData.facebook.trim()) newInvestor.facebook = formData.facebook.trim();
+
+      const { error, data } = await addInvestor(newInvestor);
 
       if (error) {
         console.error('Supabase insert error:', error);
+        
+        let errorMessage = 'Failed to save to database.';
+        
+        if (error.code === '42501') {
+          errorMessage = 'Permission denied. You may not have INSERT permissions on the investors table.';
+        } else if (error.code === '42P01') {
+          errorMessage = 'Table "investors" does not exist. Please check your database schema.';
+        } else if (error.code === '23505') {
+          errorMessage = 'Duplicate entry. This investor may already exist in the database.';
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+        
         toast({
           variant: "destructive",
-          title: "Supabase Error",
-          description: error.message || 'Failed to save to database.'
+          title: "Database Error",
+          description: errorMessage
         });
         setIsSubmitting(false);
         return;
@@ -140,7 +215,10 @@ export function AddInvestorDialog({ isOpen, onClose }: AddInvestorDialogProps) {
         company_linkedin: "",
         twitter: "",
         facebook: "",
-        country: ""
+        country: "",
+        state: "",
+        city: "",
+        location: ""
       });
       onClose();
     } catch (error) {
@@ -168,7 +246,10 @@ export function AddInvestorDialog({ isOpen, onClose }: AddInvestorDialogProps) {
         company_linkedin: "",
         twitter: "",
         facebook: "",
-        country: ""
+        country: "",
+        state: "",
+        city: "",
+        location: ""
       })
       onClose()
     }
@@ -230,6 +311,33 @@ export function AddInvestorDialog({ isOpen, onClose }: AddInvestorDialogProps) {
                     value={formData.country}
                     onChange={(e) => handleInputChange("country", e.target.value)}
                     placeholder="Enter country"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="state">State</Label>
+                  <Input
+                    id="state"
+                    value={formData.state}
+                    onChange={(e) => handleInputChange("state", e.target.value)}
+                    placeholder="Enter state"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="city">City</Label>
+                  <Input
+                    id="city"
+                    value={formData.city}
+                    onChange={(e) => handleInputChange("city", e.target.value)}
+                    placeholder="Enter city"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="location">Location</Label>
+                  <Input
+                    id="location"
+                    value={formData.location}
+                    onChange={(e) => handleInputChange("location", e.target.value)}
+                    placeholder="Enter location"
                   />
                 </div>
               </div>
